@@ -1606,6 +1606,7 @@ static int stdbaioStdinOnRead(struct baio *bb) {
 }
 
 void stdbaioInit() {
+    //todo : know what is baio.
     struct baio	*bb;
 
     if (stdbaioBaioMagic == 0) {

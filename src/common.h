@@ -5,6 +5,10 @@
 #define _BSD_SOURCE 1
 #define _DEFAULT_SOURCE 1
 
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
 #include <termios.h>
 #include <stdio.h>
 #include <stdlib.h>

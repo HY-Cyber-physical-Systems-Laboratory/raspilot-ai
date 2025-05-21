@@ -1,0 +1,34 @@
+#ifndef __MODULE_TEST_H__
+#define __MODULE_TEST_H__
+
+
+#if defined(FILE_TEST)
+
+#define TEST_FUNCTION_MAGIC_NUMBER 0xFDFDAAAA
+
+#define DEF_TEST_FUNCTION(FUNCTION_NAME, FUNCTION_RET_TYPE_DEF, FUNCTION_INPUT_ARGS_DEF, FUNCTION_CONTENT)\
+    FUNCTION_RET_TYPE_DEF FUNCTION_NAME_##TEST_FUNCTION_MAGIC_NUMBER FUNCTION_INPUT_ARGS_DEF {\
+        FUNCTION_CONTENT\
+    }
+
+#define CALL_TEST_FUNCTION(FUNTION_NAME, FUNCTION_INPUT_ARGS) do{ FUNCTION_NAME_##TEST_FUNCTION_MAGIC_NUMBER(FUNCTION_INPUT_ARGS) }while(0);
+
+
+#if defined(__cplusplus)
+#define LOG_TEST(X) do{ std::cout << "debug " << __FILE__ << ":" << __LINE__ << ":" << X << std::endl; }while(0);
+#else
+#define LOG_TEST(X) do{ printf("debug %s:%d: %s\n", __FILE__, __LINE__, X); }while(0);
+#endif
+
+
+#else
+
+#define DEF_TEST_FUNCTION(FUNCTION_NAME, FUNCTION_RET_TYPE_DEF, FUNCTION_INPUT_ARGS_DEF, FUNCTION_CONTENT) 
+#define CALL_TEST_FUNCTION(FUNTION_NAME, FUNCTION_INPUT_ARGS) do{ }while(0);
+
+#define LOG_TEST(X) do{ }while(0);
+
+#endif
+
+
+#endif
