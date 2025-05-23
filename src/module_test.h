@@ -2,6 +2,8 @@
 #define __MODULE_TEST_H__
 
 
+#define GET_MACRO(_1,_2,_3,NAME,...) NAME
+
 #if defined(FILE_TEST)
 
 #define TEST_FUNCTION_MAGIC_NUMBER 0xFDFDAAAA
@@ -20,6 +22,16 @@
 #define LOG_TEST(X) do{ printf("debug %s:%d: %s\n", __FILE__, __LINE__, X); }while(0);
 #endif
 
+#define ANOTATION_LOGIC_1(SITE)                   ANOTATION_LOGIC_IMPL(SITE, "", "")
+#define ANOTATION_LOGIC_2(SITE, NAME)             ANOTATION_LOGIC_IMPL(SITE, NAME, "")
+#define ANOTATION_LOGIC_3(SITE, NAME, CONTENT)    ANOTATION_LOGIC_IMPL(SITE, NAME, CONTENT)
+
+#define ANOTATION_LOGIC(...) GET_MACRO(__VA_ARGS__, ANOTATION_LOGIC_3, ANOTATION_LOGIC_2, ANOTATION_LOGIC_1)(__VA_ARGS__)
+#define ANOTATION_LOGIC_IMPL(SITE, NAME, CONTENT) \
+    do{ \
+        printf("debug %s:%d: %s: %s: %s\n", __FILE__, __LINE__, SITE, NAME, CONTENT); \
+    }while(0);
+
 
 #else
 
@@ -28,7 +40,17 @@
 
 #define LOG_TEST(X) do{ }while(0);
 
+#define ANOTATION_LOGIC_1(SITE)                   ANOTATION_LOGIC_IMPL(SITE, "", "")
+#define ANOTATION_LOGIC_2(SITE, NAME)             ANOTATION_LOGIC_IMPL(SITE, NAME, "")
+#define ANOTATION_LOGIC_3(SITE, NAME, CONTENT)    ANOTATION_LOGIC_IMPL(SITE, NAME, CONTENT)
+
+#define ANOTATION_LOGIC(...) GET_MACRO(__VA_ARGS__, ANOTATION_LOGIC_3, ANOTATION_LOGIC_2, ANOTATION_LOGIC_1)(__VA_ARGS__)
+#define ANOTATION_LOGIC_IMPL(SITE, NAME, CONTENT)
+
 #endif
+
+
+
 
 
 #endif
