@@ -1,0 +1,2 @@
+/usr/bin/ar qc libimufusion.a CMakeFiles/imufusion.dir/CMakeFiles/3.28.3/CompilerIdC/CMakeCCompilerId.o CMakeFiles/imufusion.dir/imufusion.o
+/usr/bin/ranlib libimufusion.a

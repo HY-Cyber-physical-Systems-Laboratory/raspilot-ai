@@ -1,7 +1,7 @@
 #ifndef __MODULE_TEST_H__
 #define __MODULE_TEST_H__
 
-
+#define __forceinline __attribute__((always_inline))
 #define GET_MACRO(_1,_2,_3,NAME,...) NAME
 
 #if defined(FILE_TEST)

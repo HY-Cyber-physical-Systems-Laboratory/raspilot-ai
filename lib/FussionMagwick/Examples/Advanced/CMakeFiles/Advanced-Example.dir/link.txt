@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic "CMakeFiles/Advanced-Example.dir/main.c.o" -o Advanced-Example  -lFusion 

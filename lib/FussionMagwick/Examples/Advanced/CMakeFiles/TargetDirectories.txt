@@ -1,0 +1,3 @@
+/home/chw1119/dev/raspilot-ai/lib/FussionMagwick/Examples/Advanced/CMakeFiles/Advanced-Example.dir
+/home/chw1119/dev/raspilot-ai/lib/FussionMagwick/Examples/Advanced/CMakeFiles/edit_cache.dir
+/home/chw1119/dev/raspilot-ai/lib/FussionMagwick/Examples/Advanced/CMakeFiles/rebuild_cache.dir

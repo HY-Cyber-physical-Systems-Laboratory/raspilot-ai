@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
+#include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include "module_test.h"
 
