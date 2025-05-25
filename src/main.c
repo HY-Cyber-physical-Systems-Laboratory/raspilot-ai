@@ -1,4 +1,3 @@
-
 #include "common.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -495,7 +494,7 @@ int raspilotPoll() {
     setCurrentTime();
     timeLineTimeToNextEvent(&tv, 1);
     // execute I/O operations
-    r = baioPoll(tv.tv_sec*1000000+tv.tv_usec);
+    r = baioPoll(tv.tv_sec * 1000000 + tv.tv_usec);
     setCurrentTime();
     // execute planned operations
     r += timeLineExecuteScheduledEvents(0);
@@ -919,47 +918,70 @@ void mainEmergencyLanding() {
 }
 
 static void pilotModeManualRc() {
+
+    static char* PY_CODE_CACHE = NULL;
+
+    if(PY_CODE_CACHE == NULL)
+    {
+        PY_CODE_CACHE = strDuplicate(
+            "from raspilot import *\n"
+            "from time import sleep\n"
+            "import sys\n"
+            "\n"
+            "def main():\n"
+            "    while True:\n"
+            "        raspilotPoll()\n"
+            "        sleep(0.01)\n"
+        );
+    }
+
     // In this mode the drone is controller by the joystick or similar
     manualControlInit(&uu->rc.roll, &uu->config.manual_rc_roll);
     manualControlInit(&uu->rc.pitch, &uu->config.manual_rc_pitch);
     manualControlInit(&uu->rc.yaw, &uu->config.manual_rc_yaw);
     manualControlInit(&uu->rc.altitude, &uu->config.manual_rc_altitude);
+
     timeLineInsertEvent(UTIME_AFTER_MSEC(10), manualControlRegularCheck, NULL);
+    
     uu->flyStage = FS_STANDBY;
+    
     timeLineInsertEvent(UTIME_AFTER_MSEC(2), pilotRegularStabilisationTick, NULL);
     // This is the main loop when raspilot is in manual rc mode
     while (uu->flyStage == FS_STANDBY) {
-	uu->rc.altitude.value = -9999;
-	lprintf(0, "%s: Standby\n", PPREFIX());
-	mavlinkPrintfStatusTextToListeners("Standby mode");
-	usleep(10000);
-	pilotLaunchPoseClear(NULL);
-	while (uu->flyStage == FS_STANDBY) {
-	    raspilotPoll() ;
-	}
-	if (uu->flyStage == FS_COUNTDOWN) {
-	    lprintf(0, "%s: Countdown!\n", PPREFIX());
-	    // mavlinkPrintfStatusTextToListeners("Countdown");
-	    raspilotPreLaunchSequence(1);
-	    if (uu->flyStage == FS_STANDBY) {
-		lprintf(0, "%s: Info: Launch sequence interrupted.\n", PPREFIX());		
-	    } else if (uu->rc.altitude.value <= -9999) {
-		lprintf(0, "%s: Error: Launch altitude not set during prefly. Interrupting!\n", PPREFIX());
-		mavlinkPrintfStatusTextToListeners("Launch altitude not set during prefly. Interrupting!\n");
-		uu->flyStage = FS_STANDBY;
-	    } else {
-		lprintf(0, "%s: Info: launched.\n", PPREFIX());
-		mavlinkPrintfStatusTextToListeners("Launch");
-		uu->flyStage = FS_FLY;
-		while (uu->flyStage == FS_FLY) {
-		    raspilotPoll();
-		}
-		if (uu->flyStage == FS_EMERGENCY_LANDING) {
-		    mainEmergencyLanding();
-		    if (uu->flyStage == FS_EMERGENCY_LANDING) raspilotGotoStandby();
-		}
-	    }
-	}
+        uu->rc.altitude.value = -9999;
+        lprintf(0, "%s: Standby\n", PPREFIX());
+        
+        mavlinkPrintfStatusTextToListeners("Standby mode");
+        usleep(10000);
+        pilotLaunchPoseClear(NULL);
+        
+        while (uu->flyStage == FS_STANDBY) {
+            raspilotPoll() ;
+        }
+        
+        if (uu->flyStage == FS_COUNTDOWN) {
+            lprintf(0, "%s: Countdown!\n", PPREFIX());
+            // mavlinkPrintfStatusTextToListeners("Countdown");
+            raspilotPreLaunchSequence(1);
+            if (uu->flyStage == FS_STANDBY) {
+            lprintf(0, "%s: Info: Launch sequence interrupted.\n", PPREFIX());		
+            } else if (uu->rc.altitude.value <= -9999) {
+            lprintf(0, "%s: Error: Launch altitude not set during prefly. Interrupting!\n", PPREFIX());
+            mavlinkPrintfStatusTextToListeners("Launch altitude not set during prefly. Interrupting!\n");
+            uu->flyStage = FS_STANDBY;
+            } else {
+            lprintf(0, "%s: Info: launched.\n", PPREFIX());
+            mavlinkPrintfStatusTextToListeners("Launch");
+            uu->flyStage = FS_FLY;
+            while (uu->flyStage == FS_FLY) {
+                raspilotPoll();
+            }
+            if (uu->flyStage == FS_EMERGENCY_LANDING) {
+                mainEmergencyLanding();
+                if (uu->flyStage == FS_EMERGENCY_LANDING) raspilotGotoStandby();
+            }
+            }
+        }
     }
 }
 
@@ -971,24 +993,54 @@ static void pilotModeManualRc() {
 
 int main(int argc, char **argv) {
     raspilotInit(argc, argv);
+    
     switch (uu->config.pilot_main_mode) {
-    case MODE_MOTOR_PWM_CALIBRATION:
-	pilotModeMotorPwmCalibrationAndExit(1);
-	break;
-    case MODE_MOTOR_TEST:
-	pilotModeMotorTest(-1);
-	break;
-    case MODE_MANUAL_RC:
-	pilotModeManualRc();
-	break;
-    case MODE_SINGLE_MISSION:
-	timeLineInsertEvent(UTIME_AFTER_MSEC(1), pilotRegularMissionModeLoopTick, NULL);
-	timeLineInsertEvent(UTIME_AFTER_MSEC(2), pilotRegularStabilisationTick, NULL);
-	mission();
-	break;
-    default:
-	lprintf(0, "%s: Error: unexpected main pilot mode %d\n", PPREFIX(), uu->config.pilot_main_mode);
-	break;
+        case MODE_MOTOR_PWM_CALIBRATION:
+            pilotModeMotorPwmCalibrationAndExit(1);
+        break;
+
+        case MODE_MOTOR_TEST:
+            pilotModeMotorTest(-1);
+        break;
+        
+        case MODE_MANUAL_RC:
+            
+            ANOTATION_LOGIC("DRONE_MODE", "DRONE_MANUAL_RC", {
+                /*
+                    MODE_MANUAL_RC makes drone controll as RC controller input
+                    This is the main mode _for manual control of the drone.
+                    It is used _for manual takeoff, landing and other manual operations.
+                    It is also used _for manual control of the drone in the flight. 
+                */    
+            });
+
+            
+            pilotModeManualRc();
+
+        break;
+        
+        case MODE_MANUAL_AI:
+            ANOTATION_LOGIC("DRONE_MODE", "DRONE_MANUAL_AI", {
+                /*
+                    MODE_MANUAL_AI makes drone controll as AI controller input
+                    This is the main mode _for manual control of the drone.
+                    It is used _for manual takeoff, landing and other manual operations.
+                    It is also used _for manual control of the drone in the flight. 
+                */    
+            });
+            pilotModeManualRc();
+        break;
+
+        case MODE_SINGLE_MISSION:
+            timeLineInsertEvent(UTIME_AFTER_MSEC(1), pilotRegularMissionModeLoopTick, NULL);
+            timeLineInsertEvent(UTIME_AFTER_MSEC(2), pilotRegularStabilisationTick, NULL);
+            mission();
+        break;
+        
+        
+        default:
+            lprintf(0, "%s: Error: unexpected main pilot mode %d\n", PPREFIX(), uu->config.pilot_main_mode);
+        break;
     }
     raspilotShutDownAndExit();
 }

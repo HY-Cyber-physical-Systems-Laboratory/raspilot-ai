@@ -76,11 +76,13 @@ typedef enum
     DRONE_LOGIC_EXECUTE_NAVIGATE_SWING  = 0b00000000010000000000000000000000,
 
     ANOTATION_LOGIC("DRONE ACTION TYPES", "RESERVED", {
+        /*
         This Enumeration is used to define the LOGIC types of the drone.
         DRONE_CONTEXT_RESERVED_MASK is used to define the reserved mask.
 
         range is 0b00000000001111111111111111111111
         bitmask(31, 2) is used to define the reserved mask.
+        */
     })
 
 
@@ -90,6 +92,11 @@ typedef enum
 
 
 
+__forceinline DroneContext set_action_type(DroneContext action, DroneContext action_type)
+{
+    return (DroneContext)((action & ~DRONE_ACTION_DATA_RANGE) | (action_type & DRONE_ACTION_DATA_RANGE));
+}
+
 
 __forceinline DroneContext extract_action_type(DroneContext action)
 {
@@ -97,6 +104,15 @@ __forceinline DroneContext extract_action_type(DroneContext action)
 }
 
 
+__forceinline DroneContext extract_logic_type(DroneContext action)
+{
+    return (DroneContext)(action & DRONE_LOGIC_PERFORMING_DATA_RANGE);
+}
+
+__forceinline DroneContext extract_reserved_type(DroneContext action)
+{
+    return (DroneContext)(action & DRONE_CONTEXT_RESERVED_MASK);
+}
 
 
 #if defined(__cplusplus)

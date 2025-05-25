@@ -272,12 +272,18 @@ void manualControlInit(struct manualControlState *ss, struct manual_rc *mm) {
 }
 
 void manualControlRegularCheck(void *d) {
+
+    
+
     pilotScheduleNextTick(2, manualControlRegularCheck, NULL);
 
     manualPilotSetControl(&uu->rc.roll, uu->rc.roll.rc_value, &uu->config.manual_rc_roll, "roll", 20);
     manualPilotSetControl(&uu->rc.pitch, uu->rc.pitch.rc_value,  &uu->config.manual_rc_pitch, "pitch", 20);
     manualPilotSetControl(&uu->rc.yaw, uu->rc.yaw.rc_value, &uu->config.manual_rc_yaw, "yaw", 20);
     manualPilotSetControl(&uu->rc.altitude, uu->rc.altitude.rc_value, &uu->config.manual_rc_altitude, "altitude", 20);
+
+    
+
 
 #if 0
     uu->targetGimbalX += uu->manual.gimbalXIncrementPerSecond / uu->autopilot_loop_Hz;

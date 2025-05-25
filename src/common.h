@@ -6,8 +6,11 @@
 #define _DEFAULT_SOURCE 1
 
 #ifndef NULL
-#define NULL ((void *)0)
+    #define NULL ((void *)0)
 #endif
+
+
+
 
 #include <termios.h>
 #include <stdio.h>
@@ -51,6 +54,7 @@
 #include "linmath.h"
 #include "linmath2.h"
 
+#include "module_test.h"
 //////////////////////////////////////////////////////////////
 
 #ifndef EDEBUG
@@ -260,6 +264,7 @@ enum pilotMainModeEnum {
     MODE_MANUAL_RC,
     MODE_SINGLE_MISSION,
     MODE_MAX,
+    MODE_MANUAL_AI,	// this is the same as MODE_MANUAL_RC, but uses AI controller instead of RC controller
 };
 
 // Modes for remote controls controlling roll/pitch/yaw

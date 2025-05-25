@@ -1,10 +1,10 @@
 #######################################################
 # raspilot makefile
 
-CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib -L/usr/local/lib
+CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib  -I/usr/include/python3.12 -I/usr/include/opencv4 -L/usr/local/lib -lpython3.12
 LINKFLAGS= -pthread -lm -lrt 
 
-INCLUDES=common.h raspilotshm.h expmem.h sglib.h linmath.h linmath2.h ../lib/pi2c/pi2c.h
+INCLUDES=common.h raspilotshm.h expmem.h sglib.h linmath.h linmath2.h ../lib/pi2c/pi2c.h 
 OBJS=main.o common.o expmem.o json.o baio.o config.o device.o pilot.o mission.o mavlink.o ../lib/pi2c/pi2c.c
 
 ########################################################
@@ -122,6 +122,13 @@ test:always
 	# ssh ssh://$(DRONE) "cd dev/raspilot/src ; make start"
 	# ssh piz2 "dev/raspilot/tool/april-mipi/src/raspiapril -m 3 -s 0.027 -l 3.45 -u 3.896 -v 2.453 -r 8 -x 2" | ../misc/pose-vizualization/viz 
 	# ssh piz2 "dev/raspilot/tool/imu/mpu6050/fusion/fusion /dev/i2c-1"
+
+lib_test $(INCLUDES):
+	@echo "🔧 Building test.cpp with header: $(HEADER)"
+	g++ -std=c++17 -g -I. -I../lib $(CFLAGS) ./test.c -o test_exec \
+		$(LINKFLAGS) $(CFLAGS)
+	@echo "🚀 Running test_exec..."
+	./test_exec
 
 .PHONY: always
 
