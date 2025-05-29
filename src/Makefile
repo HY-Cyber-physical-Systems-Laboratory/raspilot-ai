@@ -24,7 +24,9 @@ else
 IGNORE_BUILD_ERROR=false
 endif
 
-all: libs tools raspilot
+all: libs tools raspilot prestart
+
+
 
 raspilot: $(OBJS) $(INCLUDES)
 	g++ -o raspilot $(OBJS) $(LINKFLAGS)
