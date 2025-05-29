@@ -1,8 +1,8 @@
 #######################################################
 # raspilot makefile
 
-CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib  -I/usr/include/python3.12 -I/usr/include/opencv4 -L/usr/local/lib -fpermissive
-LINKFLAGS= -pthread -lm -lrt -lpython3.12 -lboost_system -lboost_filesystem -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio
+CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib  -I/usr/include/python3.11 -I/usr/include/opencv4 -L/usr/local/lib -fpermissive
+LINKFLAGS= -pthread -lm -lrt -L/usr/lib/python3.11/config-3.11-aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu  -ldl  -lm -lboost_system -lboost_filesystem -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio
 
 INCLUDES=common.h raspilotshm.h expmem.h sglib.h linmath.h linmath2.h ../lib/pi2c/pi2c.h 
 OBJS=main.o common.o expmem.o json.o baio.o config.o device.o pilot.o mission.o mavlink.o ../lib/pi2c/pi2c.c
