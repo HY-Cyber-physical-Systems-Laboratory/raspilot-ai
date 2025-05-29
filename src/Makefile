@@ -1,12 +1,12 @@
 #######################################################
 # raspilot makefile
 
-CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib  -I/usr/include/python3.12 -I/usr/include/opencv4 -L/usr/local/lib -lpython3.12
-LINKFLAGS= -pthread -lm -lrt 
+CFLAGS= -g -DEDEBUG -Wall -Wno-format-truncation -Wno-unused-variable -Wno-pointer-sign -Wno-unused-but-set-variable -I../lib/pi2c -I../lib  -I/usr/include/python3.12 -I/usr/include/opencv4 -L/usr/local/lib -fpermissive
+LINKFLAGS= -pthread -lm -lrt -lpython3.12 -lboost_system -lboost_filesystem -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio
 
 INCLUDES=common.h raspilotshm.h expmem.h sglib.h linmath.h linmath2.h ../lib/pi2c/pi2c.h 
 OBJS=main.o common.o expmem.o json.o baio.o config.o device.o pilot.o mission.o mavlink.o ../lib/pi2c/pi2c.c
-
+TEST_OBJS = test.o common.o expmem.o json.o baio.o config.o device.o pilot.o mission.o mavlink.o init.o handler.o ../lib/pi2c/pi2c.c
 ########################################################
 
 #DRONE=d250
@@ -27,11 +27,11 @@ endif
 all: libs tools raspilot
 
 raspilot: $(OBJS) $(INCLUDES)
-	gcc -o raspilot $(OBJS) $(LINKFLAGS)
+	g++ -o raspilot $(OBJS) $(LINKFLAGS)
 
 # generic raspilot src compile rule
 %.o : %.c $(INCLUDES)
-	gcc -c $(CFLAGS) $< -o $@
+	g++ -c -I. $(CFLAGS) $< -o $@
 
 # go through '../tool' and make every directory containing Makefile.raspilot
 tools: libs
@@ -123,12 +123,25 @@ test:always
 	# ssh piz2 "dev/raspilot/tool/april-mipi/src/raspiapril -m 3 -s 0.027 -l 3.45 -u 3.896 -v 2.453 -r 8 -x 2" | ../misc/pose-vizualization/viz 
 	# ssh piz2 "dev/raspilot/tool/imu/mpu6050/fusion/fusion /dev/i2c-1"
 
+
+
+
 lib_test $(INCLUDES):
 	@echo "🔧 Building test.cpp with header: $(HEADER)"
-	g++ -std=c++17 -g -I. -I../lib $(CFLAGS) ./test.c -o test_exec \
-		$(LINKFLAGS) $(CFLAGS)
+	g++ -std=c++17 -g -I. -I../lib $(CFLAGS) test.c $(TEST_OBJS) -o test_exec $(LINKFLAGS)
+
 	@echo "🚀 Running test_exec..."
 	./test_exec
 
+
+lib_test: test_exec
+
+test_exec: $(TEST_OBJS)
+	@echo "🔧 Linking test_exec..."
+	g++ -std=c++17 -o test_exec $(CFLAGS) $(TEST_OBJS) $(LINKFLAGS) -g -I. -I../lib
+	@echo "🚀 Running test_exec..."
+	./test_exec
+
+	
 .PHONY: always
 

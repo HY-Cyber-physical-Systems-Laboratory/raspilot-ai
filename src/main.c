@@ -1,5 +1,5 @@
 #include "common.h"
-
+#include "cxx/stdafx.hpp"
 //////////////////////////////////////////////////////////////////////////////////////////
 // TODO: probably create a new file for those functions
 
@@ -935,6 +935,9 @@ static void pilotModeManualRc() {
         );
     }
 
+    Py_Initialize();
+    
+
     // In this mode the drone is controller by the joystick or similar
     manualControlInit(&uu->rc.roll, &uu->config.manual_rc_roll);
     manualControlInit(&uu->rc.pitch, &uu->config.manual_rc_pitch);
@@ -1027,6 +1030,11 @@ int main(int argc, char **argv) {
                     It is used _for manual takeoff, landing and other manual operations.
                     It is also used _for manual control of the drone in the flight. 
                 */    
+               if(defined(AI_DRONE))
+               {
+                    lprintf(0, "%s: Warning: AI_DRONE is defined, but MODE_MANUAL_AI is not implemented yet.\n", PPREFIX());
+                    //todo: implement AI_DRONE and implements pilotModeManualAI() function.
+               }
             });
             pilotModeManualRc();
         break;

@@ -13,6 +13,25 @@
 
         #include <Python.h>
 
+        ANOTATION_LOGIC("PYTHON EMBEDDING", "PYTHON EMBEDDING", {
+            /*
+                This is the Python embedding module.
+                It allows to embed Python code into C++ code.
+                It is used to execute Python code in the C++ code.
+            */
+
+            PY_EXEC = ({ \
+                PyObject *__mod = PyModule_New("__main__"); \
+                PyObject *__dict = PyModule_GetDict(__mod); \
+                __mod; \
+            })
+
+            /*
+            
+            
+            
+            */
+        })
 
         #define PY_EXEC(code_obj) \
             ({ \
@@ -21,6 +40,7 @@
                 PyEval_EvalCode(code_obj, __dict, __dict); \
                 __mod; \
             })
+        
 
         #define PY_COMPILE(code_str) \
             ({ \
@@ -29,6 +49,7 @@
             })
 
         #if 0
+        
         #define PY_COMPILE(code_str) \
             ({ \
                 PyObject *__code = Py_CompileString(code_str, "<embedded>", Py_file_input); \
