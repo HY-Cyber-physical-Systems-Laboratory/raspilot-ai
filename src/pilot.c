@@ -53,8 +53,16 @@ void motorsThrustSet(double thrust) {
 // i is the index of the motor, if -1 then all motors are set and sent
 void motorThrustSetAndSend(int i, double thrust) {
     if (i == MOTORS_ALL) {
-	motorsThrustSet(thrust);
+	uu->motor[0].thrust = -thrust;
+    uu->motor[1].thrust = -thrust;
+    uu->motor[2].thrust = thrust;
+    uu->motor[3].thrust = thrust;
+
     } else if (i >= 0 && i < uu->motor_number) {
+        if(i < 2)
+        {
+            thrust = -thrust;
+        }
 	uu->motor[i].thrust = thrust;
     } else {
 	lprintf(0, "%s: Internal Error: motor index %d of of range 0 - %d\n", PPREFIX(), i, uu->motor_number-1);
