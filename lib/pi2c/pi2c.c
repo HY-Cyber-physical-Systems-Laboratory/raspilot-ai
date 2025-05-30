@@ -23,14 +23,8 @@
 
 #define MAX_OPEN_DEV 256
 
-struct fdStr {
-    int 	fd;
-    sem_t	*sem;
-};
-
 
 static int		pi2cInitializedFlag = -1;
-struct fdStr 	fdTab[MAX_OPEN_DEV];
 static int 		fdTabIndex = 0;
 static pthread_mutex_t	fdTabMutex = PTHREAD_MUTEX_INITIALIZER;
 
