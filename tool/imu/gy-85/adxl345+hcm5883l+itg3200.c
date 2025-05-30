@@ -262,15 +262,24 @@ int HMC5883L_ReadDataReady(int ifd, bool *ready)
 
 int ITG3200_Init(int ifd, unsigned char id, bool check)
 {
-	////sem_wait(fdTab[ifd].sem);
-    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
+    if (!fdTab[ifd].sem) {
+        fprintf(stderr, "[ERROR] fdTab[%d].sem is NULL\n", ifd);
         return -1;
+    }
 
-    if (check)
-    {
+    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0) {
+        perror("[ERROR] ioctl I2C_SLAVE failed");
+        return -1;
+    }
+
+    if (check) {
         unsigned char val = 0;
-        if (pi2cReadBytes(ifd, 0x00, 1, &val) != 1 || val != id)
+        int rc = pi2cReadBytes(ifd, 0x00, 1, &val);
+        printf("[DEBUG] pi2cReadBytes returned %d, val=0x%02X\n", rc, val);
+        if (rc != 1 || val != id) {
+            fprintf(stderr, "[ERROR] ITG3200 check failed: expected 0x%02X, got 0x%02X\n", id, val);
             return -1;
+        }
     }
 
     return 0;

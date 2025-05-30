@@ -163,7 +163,7 @@ int pi2cReadBytes(int ifd, uint8_t regAddr, uint8_t length, uint8_t *data) {
 exitPoint:
 
     if (I2C_MULTIPROCESS_SHARING) {
-	sem_post(fdTab[ifd].sem);
+	    sem_post(fdTab[ifd].sem);
     }
     return count;
 }
