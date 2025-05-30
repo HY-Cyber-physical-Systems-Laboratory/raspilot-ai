@@ -357,8 +357,8 @@ static inline double doubleGetTime() {
 static void taskStop(int signum) {
     exit(0);
 }
+#define CHECK(X) do { if ((X) < 0) { fprintf(stderr, "%s failed at %s:%d\n", #X, __FILE__, __LINE__); return -1; } } while (0)
 
-#define CHECK(X) 
 static int aConfigure(int aFile)
 {
     CHECK(ADXL345_Init(aFile, ADXL345_ID, 1));
