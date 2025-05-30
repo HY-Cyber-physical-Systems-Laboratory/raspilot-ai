@@ -553,6 +553,10 @@ int main(int argc, char **argv) {
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         printf("rpy %7.5f %7.5f %7.5f\n",
+            0,0,0);
+
+
+        printf("rpy %7.5f %7.5f %7.5f\n",
             euler.angle.pitch * M_PI / 180.0,
             euler.angle.roll * M_PI / 180.0,
             euler.angle.yaw * M_PI / 180.0);

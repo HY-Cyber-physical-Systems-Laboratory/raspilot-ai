@@ -668,7 +668,7 @@ void raspilotLaunch(double altitude) {
     struct waypoint     savedWaypoint;
 
     if (altitude != 0 && altitude < uu->config.drone_min_altitude) {
-	lprintf(1, "%s: Warning: Launch altitude smaller than drone_min_altitude!\n", PPREFIX());
+	lprintf(0, "%s: Warning: Launch altitude smaller than drone_min_altitude!\n", PPREFIX());
 	// prefer not to overwrite because of 'joystick' fly
 	// altitude = uu->config.drone_min_altitude;
     }
