@@ -568,21 +568,32 @@ void raspilotPreLaunchSequence(int flightControllerOnlyMode) {
     //mavlinkPrintfStatusTextToListeners("Starting prefly sequence");
 
     while (! pilotAreAllDevicesReady()) {
+        lprintf(0, "%s: waiting for pilotAreAllDevicesReady\n", PPREFIX());
+
         raspilotPoll();
-        if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+        if (uu->flyStage == FS_STANDBY) {
+            lprintf(0, "%s: launchCanceled\n", PPREFIX());
+
+            goto launchCanceled;
+        }
     }
     
     lprintf(1, "%s: Info: All sensors/devices ready.\n", PPREFIX());
 
     // This will arm motors
     uu->flyStage = FS_PRE_FLY;
+    
     // wait until motor beeps (ARM)
+    
     motorsThrustSet(0);
     raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATIONS_TO_LAUNCH);
-    if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+    
+    if (uu->flyStage == FS_STANDBY) 
+        goto launchCanceled;
     
     if (! flightControllerOnlyMode) {
 	    lprintf(1, "%s: Warning: First warning motor rotation!\n", PPREFIX());
+        
         mavlinkPrintfStatusTextToListeners("Warning rotation");
         motorsThrustSet(thrust_warning_spin);
         
@@ -920,22 +931,26 @@ static void pilotModeMotorTest(int i) {
     timeLineInsertEvent(UTIME_AFTER_MSEC(1), pilotRegularMotorTestModeTick, NULL);
     // Do a longer wait for case if someting is not initialized immediately.
     raspilotBusyWaitUntilTimeoutOrStandby(10.0);
+    
     if (i < 0) {
-	pilotSingleMotorTest(0) ;
-	pilotSingleMotorTest(1) ;
-	pilotSingleMotorTest(2) ;
-	pilotSingleMotorTest(3) ;
+        pilotSingleMotorTest(0) ;
+        pilotSingleMotorTest(1) ;
+        pilotSingleMotorTest(2) ;
+        pilotSingleMotorTest(3) ;
     } else {
-	pilotSingleMotorTest(i) ;
+    	pilotSingleMotorTest(i) ;
     }
+
     pilotAllMotorsTest();
     raspilotShutDownAndExit();
 }
 
 static int droneHasEmergencyLanded() {
-    if (uu->flyStage != FS_EMERGENCY_LANDING) return(0);
+    if (uu->flyStage != FS_EMERGENCY_LANDING) 
+        return(0);
     // If we are on low altitude, confitm land
-    if (uu->droneLastPosition[2] < 0.005) return(1);
+    if (uu->droneLastPosition[2] < 0.005) 
+        return(1);
     // if thrust is very low, we are probably landed even if altimeters do not say so
     if (uu->averageAltitudeThrust <= uu->config.motor_thrust_min_spin) return(1);
     return(0);
@@ -989,18 +1004,24 @@ static void pilotModeManualRc() {
     uu->flyStage = FS_STANDBY;
     
     timeLineInsertEvent(UTIME_AFTER_MSEC(2), pilotRegularStabilisationTick, NULL);
+
     // This is the main loop when raspilot is in manual rc mode
     while (uu->flyStage == FS_STANDBY) {
         uu->rc.altitude.value = -9999;
         lprintf(0, "%s: Standby\n", PPREFIX());
         
-        mavlinkPrintfStatusTextToListeners("Standby mode");
+        //mavlinkPrintfStatusTextToListeners("Standby mode");
         usleep(10000);
+        
         pilotLaunchPoseClear(NULL);
         
         while (uu->flyStage == FS_STANDBY) {
+            lprintf(0, "%s: in the polling loop\n", PPREFIX());
+        
             raspilotPoll() ;
         }
+        
+        lprintf(0, "%s: polling loop out\n", PPREFIX());
         
         if (uu->flyStage == FS_COUNTDOWN) {
             lprintf(0, "%s: Countdown!\n", PPREFIX());

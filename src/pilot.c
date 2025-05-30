@@ -1539,10 +1539,12 @@ void pilotRegularStabilisationTick(void *d) {
 void pilotRegularMissionModeLoopTick(void *d) {
     // This is the main function called at each tick of mission raspilot.
     // lprintf(30, "\n");
+    
     lprintf(100, "%s: Mission tick\n", PPREFIX());
     nextStabilizationTickUsec = pilotScheduleNextTick(uu->autopilot_loop_Hz, pilotRegularMissionModeLoopTick, NULL);
+    
     if (uu->flyStage >= FS_FLY) {
-	pilotComputeTargetRollPitchYawForWaypoint();
+	    pilotComputeTargetRollPitchYawForWaypoint();
     }
 }
 
