@@ -449,7 +449,6 @@ int main(int argc, char **argv) {
     char	*optI2cPath = (char*)"/dev/i2c-1";
     double	optRate = 1000.0;
 
-    printf("sibal1");
 
     // 옵션 처리
     for (i = 1; i < argc; i++) {
@@ -462,11 +461,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("sibal2");
 
     if (optSharedI2cFlag) pi2cInit(optI2cPath, 1);
 
-    printf("sibal3");
     // Fusion 초기화
     const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector gyroscopeSensitivity = {1.0f, 1.0f, 1.0f};
@@ -477,7 +474,6 @@ int main(int argc, char **argv) {
     const FusionMatrix softIronMatrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
 
-    printf("sibal4");
 
     FusionOffset offset;
     FusionAhrs ahrs;
@@ -492,9 +488,7 @@ int main(int argc, char **argv) {
         .rejectionTimeout = (unsigned)(5 * optRate),
     });
 
-    printf("sibal5");
     // 센서 초기화
-    printf("sibal6");
     int accelFd = pi2cOpen(optI2cPath, 0x53);
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
     //int compFd  = pi2cOpen(optI2cPath, O_RDWR);
@@ -513,24 +507,17 @@ int main(int argc, char **argv) {
 
 
 
-    printf("sibal8");
     signal(SIGINT, taskStop);
 
-    printf("sibal9");
     pi2cWriteByteToReg(magFd, 0x00, 0x14);  // 75Hz
     pi2cWriteByteToReg(magFd, 0x02, 0x00);  // continuous mode
 
     usleepTime = 1000000 / optRate;
     usleep(usleepTime);
-
-    printf("sibal123123123");
     t0 = doubleGetTime();
     while (1) {
-
-        printf("s32313ibal123123123");
         FusionVector gyroscope, accelerometer, magnetometer;
 
-        printf("s32313ibal123123123");
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
@@ -576,8 +563,6 @@ int main(int argc, char **argv) {
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
         fflush(stdout);
-
-        printf("s32313ibal123123123");
         usleep(usleepTime);
     }
 

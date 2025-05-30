@@ -124,8 +124,7 @@ int main(int argc, char **argv) {
 	double temp;
 
 	mpu.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
-	
-    accelerometer.axis.x = AcX / 16384.0; 
+	accelerometer.axis.x = AcX / 16384.0; 
 	accelerometer.axis.y = AcY / 16384.0; 
 	accelerometer.axis.z = AcZ / 16384.0; 
 	
