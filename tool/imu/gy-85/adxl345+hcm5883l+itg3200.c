@@ -7,7 +7,6 @@
 #include <string.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <ncurses.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
