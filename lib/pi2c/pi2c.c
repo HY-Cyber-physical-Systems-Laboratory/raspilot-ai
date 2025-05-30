@@ -13,7 +13,6 @@
 #include <sys/mman.h>
 #include <linux/i2c-dev.h>
 #include <pthread.h>
-#include <semaphore.h>
 
 #include "pi2c.h"
 
@@ -31,7 +30,7 @@ struct fdStr {
 
 
 static int		pi2cInitializedFlag = -1;
-static struct fdStr 	fdTab[MAX_OPEN_DEV];
+struct fdStr 	fdTab[MAX_OPEN_DEV];
 static int 		fdTabIndex = 0;
 static pthread_mutex_t	fdTabMutex = PTHREAD_MUTEX_INITIALIZER;
 

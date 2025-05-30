@@ -1,5 +1,13 @@
 #include <stdint.h>
+#include <semaphore.h>
 
+struct fdStr {
+    int 	fd;
+    sem_t	*sem;
+};
+
+#define MAX_OPEN_DEV 256
+struct fdStr 	fdTab[MAX_OPEN_DEV];
 
 void pi2cInit(char *path, int multiProcessSharingFlag) ;
 void pi2cClose(int fd) ;
