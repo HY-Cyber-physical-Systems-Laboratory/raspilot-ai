@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/param.h>
+#include <semaphore.h>
+
 
 
 
@@ -27,6 +29,11 @@
 #include "adxl345.h"
 #include "hmc5883l.h"
 #include "itg3200.h"
+
+struct fdStr {
+    int 	fd;
+    sem_t	*sem;
+};
 
 #define MAX_OPEN_DEV 256
 extern struct fdStr fdTab[MAX_OPEN_DEV];
