@@ -28,6 +28,7 @@
 #include "hmc5883l.h"
 #include "itg3200.h"
 
+#define MAX_OPEN_DEV 256
 extern struct fdStr fdTab[MAX_OPEN_DEV];
 
 int ADXL345_Init(int ifd, unsigned char id, bool check)

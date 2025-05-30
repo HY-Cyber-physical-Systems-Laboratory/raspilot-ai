@@ -18,18 +18,18 @@
 
 #define I2C_MULTIPROCESS_SHARING 1
 
+#define MAX_OPEN_DEV 256
+
 struct fdStr {
     int 	fd;
     sem_t	*sem;
 };
 
-#define MAX_OPEN_DEV 256
 
 struct fdStr 	fdTab[MAX_OPEN_DEV];
 ////////////////////////////////////////////////////////////////////////////
 // multiprocess sync stuff
 
-#define MAX_OPEN_DEV 256
 
 
 static int		pi2cInitializedFlag = -1;
