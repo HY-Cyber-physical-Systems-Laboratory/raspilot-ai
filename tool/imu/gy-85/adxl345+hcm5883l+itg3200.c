@@ -399,7 +399,9 @@ static int aConfigure(int aFile)
 }
 
 static int cConfigure(int cFile)
-{
+{   
+    return 1;
+    #if 0
     CHECK(HMC5883L_Init(cFile, HMC5883L_ID, 1));
 
     struct HMC5883L conf = {
@@ -413,6 +415,7 @@ static int cConfigure(int cFile)
     CHECK(HMC5883L_SetContinuousMeasurement(cFile));
 
     return 0;
+    #endif
 }
 
 static int gConfigure(int gFile)
@@ -496,8 +499,6 @@ int main(int argc, char **argv) {
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
     //int compFd  = pi2cOpen(optI2cPath, O_RDWR);
 
-    magFd = pi2cOpen(optI2cPath, 0x1e);
-    
     printf("sibal7");
 
     if (aConfigure(accelFd)) {
@@ -510,20 +511,11 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (cConfigure(magFd)) {
-        fprintf(stderr, "Sensor init failed\n");
-        return -1;
-    }
 
 
     printf("sibal8");
     signal(SIGINT, taskStop);
 
-    // HMC5883L 설정
-    if (magFd < 0) {
-        fprintf(stderr, "pi2c magnetometer connection failed\n");
-        return -1;
-    }
     printf("sibal9");
     pi2cWriteByteToReg(magFd, 0x00, 0x14);  // 75Hz
     pi2cWriteByteToReg(magFd, 0x02, 0x00);  // continuous mode
@@ -542,7 +534,7 @@ int main(int argc, char **argv) {
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
-        pi2cReadBytes(magFd, 0x03, 6, mm);
+        
 
         // 데이터 변환
         accelerometer.axis.x = aRawX / 256.0f;  // ADXL345는 ±2g 에서 256 LSB/g
@@ -557,9 +549,6 @@ int main(int argc, char **argv) {
         mRawY = (int16_t)((mm[2] << 8) | mm[3]);
         mRawZ = (int16_t)((mm[4] << 8) | mm[5]);
 
-        magnetometer.axis.x = mRawX;
-        magnetometer.axis.y = mRawY;
-        magnetometer.axis.z = mRawZ;
 
         // 타이밍 계산
         t1 = doubleGetTime();
