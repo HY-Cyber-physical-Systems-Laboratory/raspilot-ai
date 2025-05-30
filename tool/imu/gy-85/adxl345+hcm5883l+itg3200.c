@@ -182,21 +182,21 @@ int ADXL345_WriteOffset(int ifd, char x, char y, char z)
 
 int HMC5883L_Init(int ifd, unsigned char id, bool check)
 {
-    printf("[DEBUG] HMC5883L_Init: ifd=%d, id=0x%02X\n", ifd, id);
+    //printf("[DEBUG] HMC5883L_Init: ifd=%d, id=0x%02X\n", ifd, id);
 
     // ioctl로 I2C 슬레이브 주소 설정
     if (ioctl(ifd, I2C_SLAVE, id) < 0) {
         perror("[ERROR] ioctl(I2C_SLAVE) failed");
         return -1;
     }
-    printf("[DEBUG] ioctl(I2C_SLAVE) success\n");
+    //printf("[DEBUG] ioctl(I2C_SLAVE) success\n");
 
     if (check) {
         unsigned char buffer[3];
         int rc = pi2cReadBytes(ifd, 0x0A, 3, buffer);
 
-        printf("[DEBUG] pi2cReadBytes returned %d, values = [0x%02X 0x%02X 0x%02X]\n",
-               rc, buffer[0], buffer[1], buffer[2]);
+        //printf("[DEBUG] pi2cReadBytes returned %d, values = [0x%02X 0x%02X 0x%02X]\n",
+               //rc, buffer[0], buffer[1], buffer[2]);
 
         if (rc != 3) {
             fprintf(stderr, "[ERROR] pi2cReadBytes failed (read %d bytes)\n", rc);
@@ -279,7 +279,7 @@ int HMC5883L_ReadDataReady(int ifd, bool *ready)
 int ITG3200_Init(int ifd, unsigned char id, bool check)
 {
 
-    printf("[DEBUG] ITG3200_Init: ifd=%d, id=0x%02X\n", ifd, id);
+    //printf("[DEBUG] ITG3200_Init: ifd=%d, id=0x%02X\n", ifd, id);
 
     if (ioctl(ifd, I2C_SLAVE, id) < 0) {
         perror("[ERROR] ioctl I2C_SLAVE failed");
@@ -289,7 +289,7 @@ int ITG3200_Init(int ifd, unsigned char id, bool check)
     if (check) {
         unsigned char val = 0;
         int rc = pi2cReadBytes(ifd, 0x00, 1, &val);
-        printf("[DEBUG] pi2cReadBytes returned %d, val=0x%02X\n", rc, val);
+        //printf("[DEBUG] pi2cReadBytes returned %d, val=0x%02X\n", rc, val);
         if (rc != 1) {
             fprintf(stderr, "[ERROR] ITG3200 check failed: expected 0x%02X, got 0x%02X\n", id, val);
             return -1;
@@ -493,7 +493,6 @@ int main(int argc, char **argv) {
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
     //int compFd  = pi2cOpen(optI2cPath, O_RDWR);
 
-    printf("sibal7");
 
     if (aConfigure(accelFd)) {
         fprintf(stderr, "Sensor init failed\n");
@@ -558,6 +557,10 @@ int main(int argc, char **argv) {
             euler.angle.roll * M_PI / 180.0,
             euler.angle.yaw * M_PI / 180.0);
 
+        printf("eacc %7.5f %7.5f %7.5f\n",
+            accelerometer.axis.x,
+            accelerometer.axis.y,
+            accelerometer.axis.z);
 
         t0 = t1;
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
