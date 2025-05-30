@@ -508,14 +508,11 @@ int main(int argc, char **argv) {
 
     signal(SIGINT, taskStop);
 
-    pi2cWriteByteToReg(magFd, 0x00, 0x14);  // 75Hz
-    pi2cWriteByteToReg(magFd, 0x02, 0x00);  // continuous mode
-
     usleepTime = 1000000 / optRate;
     usleep(usleepTime);
     t0 = doubleGetTime();
     while (1) {
-        FusionVector gyroscope, accelerometer, magnetometer;
+        FusionVector gyroscope, accelerometer
 
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
@@ -531,11 +528,6 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        mRawX = (int16_t)((mm[0] << 8) | mm[1]);
-        mRawY = (int16_t)((mm[2] << 8) | mm[3]);
-        mRawZ = (int16_t)((mm[4] << 8) | mm[5]);
-
-
         // 타이밍 계산
         t1 = doubleGetTime();
         samplePeriod = t1 - t0;
@@ -543,13 +535,12 @@ int main(int argc, char **argv) {
         // 보정
         gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
         accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
-        magnetometer = FusionCalibrationMagnetic(magnetometer, softIronMatrix, hardIronOffset);
-
+        
         // 오프셋 보정
         gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
         // AHRS 업데이트
-        FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, samplePeriod);
+        FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         
@@ -566,12 +557,12 @@ int main(int argc, char **argv) {
             accelerometer.axis.z);
 
         printf("pose %7.5f %7.5f %7.5f\n",
-                    0,0,0);
+                    0.0,0.0,0.0);
         
                     t0 = t1;
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
-        fflush(stdout);
+        //fflush(stdout);
         usleep(usleepTime);
     }
 
