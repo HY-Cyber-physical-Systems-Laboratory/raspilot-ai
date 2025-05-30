@@ -25,7 +25,8 @@
 #include <fcntl.h>  
 
 #include "adxl345.h"
-
+#include "hmc5883l.h"
+#include "itg3200.h"
 
 extern struct fdStr fdTab[MAX_OPEN_DEV];
 
