@@ -41,8 +41,7 @@ extern struct fdStr fdTab[MAX_OPEN_DEV];
 int ADXL345_Init(int ifd, unsigned char id, bool check)
 {
 
-	sem_wait(fdTab[ifd].sem);
-
+	////sem_wait(fdTab[ifd].sem);
     if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
@@ -183,7 +182,7 @@ int ADXL345_WriteOffset(int ifd, char x, char y, char z)
 
 int HMC5883L_Init(int ifd, unsigned char id, bool check)
 {
-	sem_wait(fdTab[ifd].sem);
+	////sem_wait(fdTab[ifd].sem);
     if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
@@ -263,7 +262,7 @@ int HMC5883L_ReadDataReady(int ifd, bool *ready)
 
 int ITG3200_Init(int ifd, unsigned char id, bool check)
 {
-	sem_wait(fdTab[ifd].sem);
+	////sem_wait(fdTab[ifd].sem);
     if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
