@@ -182,22 +182,38 @@ int ADXL345_WriteOffset(int ifd, char x, char y, char z)
 
 int HMC5883L_Init(int ifd, unsigned char id, bool check)
 {
-	////sem_wait(fdTab[ifd].sem);
-    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
+    printf("[DEBUG] HMC5883L_Init: ifd=%d, id=0x%02X\n", ifd, id);
+
+    // ioctl로 I2C 슬레이브 주소 설정
+    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0) {
+        perror("[ERROR] ioctl(I2C_SLAVE) failed");
         return -1;
+    }
+    printf("[DEBUG] ioctl(I2C_SLAVE) success\n");
 
-    if (check)
-    {
+    if (check) {
         unsigned char buffer[3];
-        if (pi2cReadBytes(ifd, 0x0A, 3, buffer) != 3)
-            return -1;
+        int rc = pi2cReadBytes(ifd, 0x0A, 3, buffer);
 
-        if (buffer[0] != 0x48 || buffer[1] != 0x34 || buffer[2] != 0x33)
+        printf("[DEBUG] pi2cReadBytes returned %d, values = [0x%02X 0x%02X 0x%02X]\n",
+               rc, buffer[0], buffer[1], buffer[2]);
+
+        if (rc != 3) {
+            fprintf(stderr, "[ERROR] pi2cReadBytes failed (read %d bytes)\n", rc);
             return -1;
+        }
+
+        if (buffer[0] != 0x48 || buffer[1] != 0x34 || buffer[2] != 0x33) {
+            fprintf(stderr, "[ERROR] HMC5883L ID mismatch: expected [0x48 0x34 0x33], got [0x%02X 0x%02X 0x%02X]\n",
+                    buffer[0], buffer[1], buffer[2]);
+            return -1;
+        }
     }
 
+    printf("[DEBUG] HMC5883L_Init successful\n");
     return 0;
 }
+
 
 int HMC5883L_Configure(int ifd, struct HMC5883L *device)
 {
