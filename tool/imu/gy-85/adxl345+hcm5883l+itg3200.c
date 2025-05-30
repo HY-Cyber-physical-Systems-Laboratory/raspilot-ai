@@ -262,6 +262,9 @@ int HMC5883L_ReadDataReady(int ifd, bool *ready)
 
 int ITG3200_Init(int ifd, unsigned char id, bool check)
 {
+
+    printf("[DEBUG] ITG3200_Init: ifd=%d, id=0x%02X\n", ifd, id);
+    
     if (!fdTab[ifd].sem) {
         fprintf(stderr, "[ERROR] fdTab[%d].sem is NULL\n", ifd);
         return -1;
