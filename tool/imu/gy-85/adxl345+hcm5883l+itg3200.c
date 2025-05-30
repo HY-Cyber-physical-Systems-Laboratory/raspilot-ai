@@ -553,7 +553,7 @@ int main(int argc, char **argv) {
     char	*optI2cPath = (char*)"/dev/i2c-1";
     double	optRate = 1000.0;
 
-    print("sibal1");
+    printf("sibal1");
 
     // 옵션 처리
     for (i = 1; i < argc; i++) {
@@ -566,11 +566,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    print("sibal2");
+    printf("sibal2");
 
     if (optSharedI2cFlag) pi2cInit(optI2cPath, 1);
 
-    print("sibal3");
+    printf("sibal3");
     // Fusion 초기화
     const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector gyroscopeSensitivity = {1.0f, 1.0f, 1.0f};
@@ -581,7 +581,7 @@ int main(int argc, char **argv) {
     const FusionMatrix softIronMatrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
 
-    print("sibal4");
+    printf("sibal4");
     FusionOffset offset;
     FusionAhrs ahrs;
     FusionOffsetInitialise(&offset, optRate);
@@ -594,23 +594,23 @@ int main(int argc, char **argv) {
         .rejectionTimeout = (unsigned)(5 * optRate),
     });
 
-    print("sibal5");
+    printf("sibal5");
     // 센서 초기화
-    print("sibal6");
+    printf("sibal6");
     int accelFd = pi2cOpen(optI2cPath, 0x53);
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
     //int compFd  = pi2cOpen(optI2cPath, O_RDWR);
 
     magFd = pi2cOpen(optI2cPath, 0x1e);
     
-    print("sibal7");
+    printf("sibal7");
 
     if (aConfigure(accelFd) || gConfigure(gyroFd) || cConfigure(magFd)) {
         fprintf(stderr, "Sensor init failed\n");
         return -1;
     }
 
-    print("sibal8");
+    printf("sibal8");
     signal(SIGINT, taskStop);
 
     // HMC5883L 설정
@@ -618,18 +618,18 @@ int main(int argc, char **argv) {
         fprintf(stderr, "pi2c magnetometer connection failed\n");
         return -1;
     }
-    print("sibal9");
+    printf("sibal9");
     pi2cWriteByteToReg(magFd, 0x00, 0x14);  // 75Hz
     pi2cWriteByteToReg(magFd, 0x02, 0x00);  // continuous mode
 
     usleepTime = 1000000 / optRate;
     usleep(usleepTime);
 
-    print("sibal123123123");
+    printf("sibal123123123");
     t0 = doubleGetTime();
     while (1) {
 
-        print("s32313ibal123123123");
+        printf("s32313ibal123123123");
         FusionVector gyroscope, accelerometer, magnetometer;
 
         // 센서 데이터 읽기
