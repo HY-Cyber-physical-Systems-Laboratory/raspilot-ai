@@ -466,7 +466,7 @@ int main(int argc, char **argv) {
 
     // Fusion 초기화
     const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
-    const FusionVector gyroscopeSensitivity = {1.0f, 1.0f, 1.0f};
+    const FusionVector gyroscopeSensitivity = {0.8f, 0.8f, 0.8f};
     const FusionVector gyroscopeOffset = {0.0f, 0.0f, 0.0f};
     const FusionMatrix accelerometerMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector accelerometerSensitivity = {1.0f, 1.0f, 1.0f};
