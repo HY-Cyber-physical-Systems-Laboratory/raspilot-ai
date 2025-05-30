@@ -564,10 +564,12 @@ void raspilotPreLaunchSequence(int flightControllerOnlyMode) {
     thrust_warning_spin = uu->config.motor_thrust_min_spin;
 
     lprintf(1, "%s: Info: Starting prefly sequence.\n", PPREFIX());
-    mavlinkPrintfStatusTextToListeners("Starting prefly sequence");
+
+    //mavlinkPrintfStatusTextToListeners("Starting prefly sequence");
+
     while (! pilotAreAllDevicesReady()) {
-	raspilotPoll();
-	if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+        raspilotPoll();
+        if (uu->flyStage == FS_STANDBY) goto launchCanceled;
     }
     
     lprintf(1, "%s: Info: All sensors/devices ready.\n", PPREFIX());
@@ -580,14 +582,19 @@ void raspilotPreLaunchSequence(int flightControllerOnlyMode) {
     if (uu->flyStage == FS_STANDBY) goto launchCanceled;
     
     if (! flightControllerOnlyMode) {
-	lprintf(1, "%s: Warning: First warning motor rotation!\n", PPREFIX());
-	mavlinkPrintfStatusTextToListeners("Warning rotation");
-	motorsThrustSet(thrust_warning_spin);
-	raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATION_TIME);
-	if (uu->flyStage == FS_STANDBY) goto launchCanceled;
-	motorsThrustSet(0);
-	raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATIONS_DELAY);
-	if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+	    lprintf(1, "%s: Warning: First warning motor rotation!\n", PPREFIX());
+        mavlinkPrintfStatusTextToListeners("Warning rotation");
+        motorsThrustSet(thrust_warning_spin);
+        
+        raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATION_TIME);
+	    
+        if (uu->flyStage == FS_STANDBY) 
+            goto launchCanceled;
+	    
+        motorsThrustSet(0);
+	    raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATIONS_DELAY);
+	    if (uu->flyStage == FS_STANDBY) 
+            goto launchCanceled;
     }
     
     // launch pose has to be stored between rotations. To have enough of time to accumulate reasonable values
@@ -597,35 +604,49 @@ void raspilotPreLaunchSequence(int flightControllerOnlyMode) {
 
     // One more time wait until all regression buffers are full with launch pose corrected values
     while (! pilotAreAllDevicesReady()) {
-	raspilotPoll();
-	if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+        raspilotPoll();
+        if (uu->flyStage == FS_STANDBY) goto launchCanceled;
     }
 
     lprintf(1, "%s: Warning: Second warning rotation!\n", PPREFIX());
-    mavlinkPrintfStatusTextToListeners("Warning rotation");
+    //mavlinkPrintfStatusTextToListeners("Warning rotation");
+    
     motorsThrustSet(thrust_warning_spin);
     raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATION_TIME);
-    if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+    
+    if (uu->flyStage == FS_STANDBY) 
+        goto launchCanceled;
+    
     motorsThrustSet(0);
     raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATIONS_TO_LAUNCH);
-    if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+    
+    if (uu->flyStage == FS_STANDBY) 
+        goto launchCanceled;
     
     lprintf(1, "%s: Info: Prefly rotation!\n", PPREFIX());
+    
     // start flying motor rotation
     // Maybe a bit more than min rotation would be ok
+    
     motorsThrustSet(uu->config.motor_thrust_min_spin);
     raspilotBusyWaitUntilTimeoutOrStandby(PILOT_WARMING_WARNING_ROTATION_TIME);
-    if (uu->flyStage == FS_STANDBY) goto launchCanceled;
+    
+    if (uu->flyStage == FS_STANDBY) 
+        goto launchCanceled;
 
     lprintf(5, "%s: Info: Prefly sequence done.\n", PPREFIX());
 
     mainLoadPreviousFlyTime();
+    
     mainStatistics(STATISTIC_INIT);
+    
     pilotInitiatePids();
+    
     return;
 
 launchCanceled:
     motorsThrustSet(0);
+    
     return;
 }
 
@@ -877,6 +898,24 @@ static void pilotSingleMotorTest(int motorIndex) {
     raspilotBusyWaitUntilTimeoutOrStandby(1.0);
 }
 
+static void pilotAllMotorsTest() {
+    int i;
+
+    lprintf(0, "%s: Warning: testing all motors\n", PPREFIX());
+    
+    for(i=0; i<uu->motor_number; i++) {
+        motorThrustSetAndSend(i, uu->config.motor_thrust_min_spin);
+    }
+
+    raspilotBusyWaitUntilTimeoutOrStandby(2.0);
+    
+    for(i=0; i<uu->motor_number; i++) {
+        motorThrustSetAndSend(i, 0);
+    }
+
+    raspilotBusyWaitUntilTimeoutOrStandby(1.0);
+}
+
 static void pilotModeMotorTest(int i) {
     timeLineInsertEvent(UTIME_AFTER_MSEC(1), pilotRegularMotorTestModeTick, NULL);
     // Do a longer wait for case if someting is not initialized immediately.
@@ -889,6 +928,7 @@ static void pilotModeMotorTest(int i) {
     } else {
 	pilotSingleMotorTest(i) ;
     }
+    pilotAllMotorsTest();
     raspilotShutDownAndExit();
 }
 
@@ -966,13 +1006,18 @@ static void pilotModeManualRc() {
             lprintf(0, "%s: Countdown!\n", PPREFIX());
             // mavlinkPrintfStatusTextToListeners("Countdown");
             raspilotPreLaunchSequence(1);
+            
             if (uu->flyStage == FS_STANDBY) {
             lprintf(0, "%s: Info: Launch sequence interrupted.\n", PPREFIX());		
             } else if (uu->rc.altitude.value <= -9999) {
             lprintf(0, "%s: Error: Launch altitude not set during prefly. Interrupting!\n", PPREFIX());
-            mavlinkPrintfStatusTextToListeners("Launch altitude not set during prefly. Interrupting!\n");
+            
+            
+            //mavlinkPrintfStatusTextToListeners("Launch altitude not set during prefly. Interrupting!\n");
+            
             uu->flyStage = FS_STANDBY;
-            } else {
+            
+        } else {
             lprintf(0, "%s: Info: launched.\n", PPREFIX());
             mavlinkPrintfStatusTextToListeners("Launch");
             uu->flyStage = FS_FLY;
