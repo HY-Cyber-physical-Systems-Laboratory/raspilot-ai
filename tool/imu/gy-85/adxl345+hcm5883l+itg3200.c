@@ -512,7 +512,7 @@ int main(int argc, char **argv) {
     usleep(usleepTime);
     t0 = doubleGetTime();
     while (1) {
-        FusionVector gyroscope, accelerometer
+        FusionVector gyroscope, accelerometer;
 
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
