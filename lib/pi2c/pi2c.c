@@ -16,7 +16,7 @@
 
 #include "pi2c.h"
 
-#define I2C_MULTIPROCESS_SHARING 1
+#define I2C_MULTIPROCESS_SHARING 0
 
 #define MAX_OPEN_DEV 256
 
