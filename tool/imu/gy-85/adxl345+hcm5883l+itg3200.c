@@ -42,7 +42,7 @@ int ADXL345_Init(int ifd, unsigned char id, bool check)
 {
 
 	////sem_wait(fdTab[ifd].sem);
-    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
+    if (ioctl(ifd, I2C_SLAVE, id) < 0)
         return -1;
 
     if (check)
