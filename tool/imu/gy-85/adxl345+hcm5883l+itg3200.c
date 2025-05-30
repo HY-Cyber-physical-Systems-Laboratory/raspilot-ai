@@ -589,9 +589,12 @@ int main(int argc, char **argv) {
     });
 
     // 센서 초기화
-    int accelFd = open(optI2cPath, O_RDWR);
-    int gyroFd  = open(optI2cPath, O_RDWR);
-    int compFd  = open(optI2cPath, O_RDWR);
+    int accelFd = pi2cOpen(optI2cPath, 0x53);
+    int gyroFd  = pi2cOpen(optI2cPath, 0x68);
+    int compFd  = pi2cOpen(optI2cPath, O_RDWR);
+
+    magFd = pi2cOpen(optI2cPath, 0x1e);
+    
 
     if (aConfigure(accelFd) || gConfigure(gyroFd) || cConfigure(compFd)) {
         fprintf(stderr, "Sensor init failed\n");
@@ -601,7 +604,6 @@ int main(int argc, char **argv) {
     signal(SIGINT, taskStop);
 
     // HMC5883L 설정
-    magFd = pi2cOpen(optI2cPath, 0x1e);
     if (magFd < 0) {
         fprintf(stderr, "pi2c magnetometer connection failed\n");
         return -1;
