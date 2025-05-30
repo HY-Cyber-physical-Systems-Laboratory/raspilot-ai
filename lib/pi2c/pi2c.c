@@ -174,10 +174,10 @@ int pi2cWrite(int ifd, uint8_t* data, int length) {
     // printf("pi2cWrite(%d, ..., %d)\n", ifd, length); fflush(stdout);
     count = 0;
     if (I2C_MULTIPROCESS_SHARING) {
-	sem_wait(fdTab[ifd].sem);
-	fd = fdTab[ifd].fd;
+	    sem_wait(fdTab[ifd].sem);
+	    fd = fdTab[ifd].fd;
     } else {
-	fd = ifd;
+	    fd = ifd;
     }
 
     if (length > 127) {
@@ -186,12 +186,12 @@ int pi2cWrite(int ifd, uint8_t* data, int length) {
     }
 
     while (count < length) {
-	r = write(fd, data+count, length-count);
-	if (r <= 0) {
-	    fprintf(stderr, "%s:%d: Failed to write device(r==%d): %s\n", __FILE__, __LINE__, r, strerror(errno));
-            goto exitPoint;
-	}
-	count += r;
+        r = write(fd, data+count, length-count);
+        if (r <= 0) {
+            fprintf(stderr, "%s:%d: Failed to write device(r==%d): %s\n", __FILE__, __LINE__, r, strerror(errno));
+                goto exitPoint;
+        }
+        count += r;
     }
 
 exitPoint:

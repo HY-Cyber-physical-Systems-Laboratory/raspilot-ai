@@ -27,11 +27,11 @@
 #include "adxl345.h"
 
 #define READ(N) \
-	if (read(file, buffer, N) != N) \
+	if (pi2cReadBytes(file, buffer, N) != N) \
 		return -1;
 
 #define WRITE(N) \
-	if (write(file, buffer, N) != N) \
+	if (pi2cWrite(file, buffer, N) != N) \
 		return -1;
 
 int ADXL345_Init(int file, unsigned char id, bool check)
@@ -632,6 +632,7 @@ int main(int argc, char **argv) {
         printf("s32313ibal123123123");
         FusionVector gyroscope, accelerometer, magnetometer;
 
+        printf("s32313ibal123123123");
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
