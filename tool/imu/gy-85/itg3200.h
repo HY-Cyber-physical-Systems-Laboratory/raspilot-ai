@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 
-#define ITG3200_ID 0x68
+#define ITG3200_ID 0x69
 
 enum ITG3200_ClockSource
 {
