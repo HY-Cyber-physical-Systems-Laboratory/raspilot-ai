@@ -1,7 +1,7 @@
 LIBI2C=$(RASPILOT_HOME)/lib/pi2c
 LIBFUSION=$(RASPILOT_HOME)/lib/FussionMagwick/Fusion
 LIBMPU=.
-all: adxl345+hcm5883l+itg3200 adxl345
+all: adxl345+hcm5883l+itg3200 
 
 
 
