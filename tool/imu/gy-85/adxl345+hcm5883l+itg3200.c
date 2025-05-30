@@ -552,8 +552,7 @@ int main(int argc, char **argv) {
         FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, samplePeriod);
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-        printf("rpy %7.5f %7.5f %7.5f\n",
-            0,0,0);
+        
 
 
         printf("rpy %7.5f %7.5f %7.5f\n",
@@ -566,7 +565,10 @@ int main(int argc, char **argv) {
             accelerometer.axis.y,
             accelerometer.axis.z);
 
-        t0 = t1;
+        printf("pose %7.5f %7.5f %7.5f\n",
+                    0,0,0);
+        
+                    t0 = t1;
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
         fflush(stdout);
