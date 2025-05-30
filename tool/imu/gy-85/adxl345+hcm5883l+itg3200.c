@@ -185,7 +185,7 @@ int HMC5883L_Init(int ifd, unsigned char id, bool check)
     printf("[DEBUG] HMC5883L_Init: ifd=%d, id=0x%02X\n", ifd, id);
 
     // ioctl로 I2C 슬레이브 주소 설정
-    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0) {
+    if (ioctl(ifd, I2C_SLAVE, id) < 0) {
         perror("[ERROR] ioctl(I2C_SLAVE) failed");
         return -1;
     }
@@ -281,12 +281,7 @@ int ITG3200_Init(int ifd, unsigned char id, bool check)
 
     printf("[DEBUG] ITG3200_Init: ifd=%d, id=0x%02X\n", ifd, id);
 
-    if (!fdTab[ifd].sem) {
-        fprintf(stderr, "[ERROR] fdTab[%d].sem is NULL\n", ifd);
-        return -1;
-    }
-
-    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0) {
+    if (ioctl(ifd, I2C_SLAVE, id) < 0) {
         perror("[ERROR] ioctl I2C_SLAVE failed");
         return -1;
     }
@@ -480,8 +475,10 @@ int main(int argc, char **argv) {
     const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
 
     printf("sibal4");
+
     FusionOffset offset;
     FusionAhrs ahrs;
+    
     FusionOffsetInitialise(&offset, optRate);
     FusionAhrsInitialise(&ahrs);
     FusionAhrsSetSettings(&ahrs, &(FusionAhrsSettings){

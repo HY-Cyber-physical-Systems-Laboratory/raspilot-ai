@@ -52,16 +52,18 @@ void pi2cInit(char *path, int multiProcessSharingFlag) {
 
     if (pi2cInitializedFlag == -1) {
 	// printf("pi2cInit(%s, %d)\n", path, multiProcessSharingFlag);
-	if (I2C_MULTIPROCESS_SHARING && multiProcessSharingFlag == 0) {
-	    pi2cGetSemaphoreName(path, semName);
-	    sem_unlink(semName);
-	}
-	fdTabIndex = 0;
-	pi2cInitializedFlag = multiProcessSharingFlag;
+        if (I2C_MULTIPROCESS_SHARING && multiProcessSharingFlag == 0) {
+            pi2cGetSemaphoreName(path, semName);
+            sem_unlink(semName);
+        }
+
+        fdTabIndex = 0;
+        pi2cInitializedFlag = multiProcessSharingFlag;
+
     } else {
-	if (pi2cInitializedFlag != multiProcessSharingFlag) {
-	    fprintf(stderr, "%s:%d: pi2cInit called with different multiProcessSharingFlags\n", __FILE__, __LINE__);
-	}
+        if (pi2cInitializedFlag != multiProcessSharingFlag) {
+            fprintf(stderr, "%s:%d: pi2cInit called with different multiProcessSharingFlags\n", __FILE__, __LINE__);
+        }
     }
 }
 
@@ -86,7 +88,7 @@ int pi2cOpen(char *path, int devAddr) {
     
     if (ioctl(fd, I2C_SLAVE, devAddr) < 0) {
         fprintf(stderr, "%s:%d: Can't select device: %s\n", __FILE__, __LINE__, strerror(errno));
-	close(fd);
+	    close(fd);
 	goto exitPoint;
     }
 
@@ -139,7 +141,7 @@ int pi2cReadBytes(int ifd, uint8_t regAddr, uint8_t length, uint8_t *data) {
     count = -1;
 
     if (I2C_MULTIPROCESS_SHARING) {
-	sem_wait(fdTab[ifd].sem);
+	sem_wait(fdTab[ifd].sem);       
 	fd = fdTab[ifd].fd;
     } else {
 	fd = ifd;
