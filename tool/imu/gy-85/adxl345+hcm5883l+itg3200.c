@@ -475,10 +475,21 @@ int main(int argc, char **argv) {
     
     printf("sibal7");
 
-    if (aConfigure(accelFd) || gConfigure(gyroFd) || cConfigure(magFd)) {
+    if (aConfigure(accelFd)) {
         fprintf(stderr, "Sensor init failed\n");
         return -1;
     }
+
+    if (gConfigure(gyroFd)) {
+        fprintf(stderr, "Sensor init failed\n");
+        return -1;
+    }
+
+    if (cConfigure(magFd)) {
+        fprintf(stderr, "Sensor init failed\n");
+        return -1;
+    }
+
 
     printf("sibal8");
     signal(SIGINT, taskStop);
