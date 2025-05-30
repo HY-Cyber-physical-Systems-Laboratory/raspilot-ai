@@ -7,7 +7,7 @@ all: adxl345+hcm5883l+itg3200 adxl345
 
 adxl345+hcm5883l+itg3200: $(LIBMPU)/adxl345+hcm5883l+itg3200.c $(LIBI2C)/pi2c.c $(LIBI2C)/pi2c.h
 	g++ -o adxl345+hcm5883l+itg3200 -g adxl345+hcm5883l+itg3200.c -I$(LIBFUSION) -I$(LIBI2C)  $(LIBI2C)/pi2c.c -L$(LIBFUSION) -lFusion  -lm -pthread -fpermissive
-
+	
 adxl345: adxl345.c $(LIBI2C)/pi2c.c $(LIBI2C)/pi2c.h  $(LIBMS5611)/MS5611.cpp 
 	g++ -o adxl345 -g adxl345.c -lm -pthread
 
