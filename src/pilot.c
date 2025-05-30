@@ -1679,6 +1679,13 @@ int pilotAreAllDevicesReady() {
 		    uu->pilotLaunchTime + dd->warming_time > currentTime.dtime
 		    )
 		) {
+            fprintf(stderr, "[DEBUG] Not ready: device=%s input=%p n=%d size=%d warmRemains=%.2f\n",
+        dd->name,
+        dd->ddt[j]->input,
+        dd->ddt[j]->input ? dd->ddt[j]->input->buffer.n : -1,
+        dd->ddt[j]->input ? dd->ddt[j]->input->buffer.size : -1,
+        (uu->pilotLaunchTime + dd->warming_time - currentTime.dtime)
+    );
 		// {
 		// if (dd->connection.type ras!= DCT_INTERNAL && dd->lastActivityTime <= uu->pilotStartingTime) {
 		// this sensor did not send data yet, continue waiting

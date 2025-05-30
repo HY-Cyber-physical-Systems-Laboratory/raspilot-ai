@@ -576,6 +576,8 @@ int main(int argc, char **argv) {
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
         fflush(stdout);
+
+        printf("s32313ibal123123123");
         usleep(usleepTime);
     }
 
