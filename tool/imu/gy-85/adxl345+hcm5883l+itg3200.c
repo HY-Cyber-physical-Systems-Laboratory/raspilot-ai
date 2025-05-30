@@ -26,446 +26,299 @@
 
 #include "adxl345.h"
 
-#define READ(N) \
-	if (pi2cReadBytes(file, buffer, N) != N) \
-		return -1;
-
-#define WRITE(N) \
-	if (pi2cWrite(file, buffer, N) != N) \
-		return -1;
-
-int ADXL345_Init(int file, unsigned char id, bool check)
+int ADXL345_Init(int ifd, unsigned char id, bool check)
 {
-    if (ioctl(file, I2C_SLAVE, id) < 0)
+    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
     if (check)
     {
-        unsigned char buffer[1];
-
-        buffer[0] = 0x00;
-        WRITE(1);
-
-        READ(1);
-        if (buffer[0] != 0xE5)
+        unsigned char val = 0;
+        if (pi2cReadBytes(ifd, 0x00, 1, &val) != 1 || val != 0xE5)
             return -1;
     }
 
     return 0;
 }
 
-int ADXL345_ConfigureActivity(int file, const struct ADXL345_Activity *conf)
+int ADXL345_ConfigureActivity(int ifd, const struct ADXL345_Activity *conf)
 {
-    unsigned char buffer[5];
-
-    buffer[0] = 0x24;
-    buffer[1] = conf->activityThreshold;
-    buffer[2] = conf->inactivityThreshold;
-    buffer[3] = conf->inactivityTime;
-    buffer[4] = ((conf->activityACDC & 0x01) << 7) |
+    unsigned char data[4] = {
+        conf->activityThreshold,
+        conf->inactivityThreshold,
+        conf->inactivityTime,
+        ((conf->activityACDC & 0x01) << 7) |
         ((conf->activityAxes & 0x07) << 4) |
         ((conf->inactivityACDC & 0x01) << 3) |
-        (conf->inactivityAxes & 0x07);
-    WRITE(5);
-
-    return 0;
+        (conf->inactivityAxes & 0x07)
+    };
+    return pi2cWriteBytesToReg(ifd, 0x24, 4, data);
 }
 
-int ADXL345_ConfigureDataFormat(int file, const struct ADXL345_DataFormat *conf)
+int ADXL345_ConfigureDataFormat(int ifd, const struct ADXL345_DataFormat *conf)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x31;
-    buffer[1] = (conf->selfTest ? 0x80 : 0x00) |
+    unsigned char val = (conf->selfTest ? 0x80 : 0x00) |
         (conf->SPI & 0x40) |
         (conf->intActive & 0x20) |
         (conf->resolution & 0x08) |
         (conf->justify & 0x04) |
         (conf->range & 0x03);
-    WRITE(2);
-
-    return 0;
+    return pi2cWriteByteToReg(ifd, 0x31, val);
 }
 
-int ADXL345_ConfigureInterrupts(int file, const struct ADXL345_Interrupts *conf)
+int ADXL345_ConfigureInterrupts(int ifd, const struct ADXL345_Interrupts *conf)
 {
-    unsigned char buffer[3];
-
-    buffer[0] = 0x2E;
-    buffer[1] = conf->enable;
-    buffer[2] = conf->map;
-    WRITE(3);
-
-    return 0;
+    unsigned char data[2] = { conf->enable, conf->map };
+    return pi2cWriteBytesToReg(ifd, 0x2E, 2, data);
 }
 
-int ADXL345_ConfigureFIFO(int file, const struct ADXL345_FIFO *conf)
+int ADXL345_ConfigureFIFO(int ifd, const struct ADXL345_FIFO *conf)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x38;
-    buffer[1] = (conf->mode & 0xC0) |
+    unsigned char val = (conf->mode & 0xC0) |
         (conf->triggerMap ? 0x20 : 0x00) |
         (conf->samples & 0x1F);
-    WRITE(2);
-
-    return 0;
+    return pi2cWriteByteToReg(ifd, 0x38, val);
 }
 
-int ADXL345_ConfigureFreeFall(int file, const struct ADXL345_FreeFall *conf)
+int ADXL345_ConfigureFreeFall(int ifd, const struct ADXL345_FreeFall *conf)
 {
-    unsigned char buffer[3];
-
-    buffer[0] = 0x28;
-    buffer[1] = conf->threshold;
-    buffer[2] = conf->time;
-    WRITE(3);
-
-    return 0;
+    unsigned char data[2] = { conf->threshold, conf->time };
+    return pi2cWriteBytesToReg(ifd, 0x28, 2, data);
 }
 
-int ADXL345_ConfigureOutputRate(int file, const struct ADXL345_OutputRate *conf)
+int ADXL345_ConfigureOutputRate(int ifd, const struct ADXL345_OutputRate *conf)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x2C;
-    buffer[1] = (conf->lowPower ? 0x10 : 0x00) |
-        (conf->rate & 0x0F);
-    WRITE(2);
-
-    return 0;
+    unsigned char val = (conf->lowPower ? 0x10 : 0x00) | (conf->rate & 0x0F);
+    return pi2cWriteByteToReg(ifd, 0x2C, val);
 }
 
-int ADXL345_ConfigurePower(int file, const struct ADXL345_Power *conf)
+int ADXL345_ConfigurePower(int ifd, const struct ADXL345_Power *conf)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x2D;
-    buffer[1] = (conf->linkActivity ? 0x20 : 0x00) |
+    unsigned char val = (conf->linkActivity ? 0x20 : 0x00) |
         (conf->autoSleep ? 0x10 : 0x00) |
         (conf->measurement ? 0x08 : 0x00) |
         (conf->sleep ? 0x04 : 0x00) |
         (conf->wakeup & 0x03);
-    WRITE(2);
+    return pi2cWriteByteToReg(ifd, 0x2D, val);
+}
+
+int ADXL345_ConfigureTap(int ifd, const struct ADXL345_Tap *conf)
+{
+    unsigned char data1[1] = { conf->threshold };
+    unsigned char data2[3] = { conf->duration, conf->latent, conf->window };
+    unsigned char data3[1] = { (conf->suppress ? 0x80 : 0x00) | (conf->axes & 0x07) };
+
+    if (pi2cWriteBytesToReg(ifd, 0x1D, 1, data1) != 2) return -1;
+    if (pi2cWriteBytesToReg(ifd, 0x21, 3, data2) != 4) return -1;
+    if (pi2cWriteBytesToReg(ifd, 0x2A, 1, data3) != 2) return -1;
 
     return 0;
 }
 
-int ADXL345_ConfigureTap(int file, const struct ADXL345_Tap *conf)
+int ADXL345_ReadActivityTapSources(int ifd, enum ADXL345_Source *sources)
 {
-    unsigned char buffer[4];
+    unsigned char val = 0;
+    if (pi2cReadBytes(ifd, 0x2B, 1, &val) != 1)
+        return -1;
 
-    buffer[0] = 0x1D;
-    buffer[1] = conf->threshold;
-    WRITE(2);
+    *sources = val;
+    return 0;
+}
 
-    buffer[0] = 0x21;
-    buffer[1] = conf->duration;
-    buffer[2] = conf->latent;
-    buffer[3] = conf->window;
-    WRITE(4);
+int ADXL345_ReadData(int ifd, short *x, short *y, short *z)
+{
+    unsigned char data[6];
 
-    buffer[0] = 0x2A;
-    buffer[1] = (conf->suppress ? 0x80 : 0x00) |
-        (conf->axes & 0x07);
-    WRITE(2);
+    if (pi2cReadBytes(ifd, 0x32, 6, data) != 6)
+        return -1;
+
+    *x = ((data[1]) << 8) | data[0];
+    *y = ((data[3]) << 8) | data[2];
+    *z = ((data[5]) << 8) | data[4];
 
     return 0;
 }
 
-int ADXL345_ReadActivityTapSources(int file, enum ADXL345_Source *sources)
+int ADXL345_ReadFIFOStatus(int ifd, struct ADXL345_FIFOStatus *status)
 {
-    unsigned char buffer[1];
+    unsigned char val = 0;
+    if (pi2cReadBytes(ifd, 0x2B, 1, &val) != 1)
+        return -1;
 
-    buffer[0] = 0x2B;
-    WRITE(1);
-
-    READ(1);
-    *sources = buffer[0];
-
+    status->triggered = ((val & 0x80) != 0);
+    status->entries = (val & 0x3F);
     return 0;
 }
 
-int ADXL345_ReadData(int file, short *x, short *y, short *z)
+int ADXL345_ReadInterruptSources(int ifd, enum ADXL345_Interrupt *sources)
 {
-    unsigned char buffer[6];
+    unsigned char val = 0;
+    if (pi2cReadBytes(ifd, 0x30, 1, &val) != 1)
+        return -1;
 
-    buffer[0] = 0x32;
-    WRITE(1);
-
-    READ(6);
-    *x = ((buffer[1]) << 8) | buffer[0];
-    *y = ((buffer[3]) << 8) | buffer[2];
-    *z = ((buffer[5]) << 8) | buffer[4];
-
+    *sources = val;
     return 0;
 }
 
-int ADXL345_ReadFIFOStatus(int file, struct ADXL345_FIFOStatus *status)
+int ADXL345_WriteOffset(int ifd, char x, char y, char z)
 {
-    unsigned char buffer[1];
-
-    buffer[0] = 0x2B;
-    WRITE(1);
-
-    READ(1);
-    status->triggered = ((buffer[0] & 0x80) != 0);
-    status->entries = (buffer[0] & 0x3F);
-
-    return 0;
+    unsigned char data[3] = { x, y, z };
+    return pi2cWriteBytesToReg(ifd, 0x1E, 3, (uint8_t*)data);
 }
 
-int ADXL345_ReadInterruptSources(int file, enum ADXL345_Interrupt *sources)
+int HMC5883L_Init(int ifd, unsigned char id, bool check)
 {
-    unsigned char buffer[1];
-
-    buffer[0] = 0x30;
-    WRITE(1);
-
-    READ(1);
-    *sources = buffer[0];
-
-    return 0;
-}
-
-int ADXL345_WriteOffset(int file, char x, char y, char z)
-{
-    unsigned char buffer[4];
-
-    buffer[0] = 0x1E;
-    buffer[1] = x;
-    buffer[2] = y;
-    buffer[3] = z;
-    WRITE(4);
-
-    return 0;
-}
-
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
-
-#include "hmc5883l.h"
-
-#define READ(N) \
-	if (read(file, buffer, N) != N) \
-		return -1;
-
-#define WRITE(N) \
-	if (write(file, buffer, N) != N) \
-		return -1;
-
-int HMC5883L_Init(int file, unsigned char id, bool check)
-{
-    if (ioctl(file, I2C_SLAVE, id) < 0)
+    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
     if (check)
     {
         unsigned char buffer[3];
+        if (pi2cReadBytes(ifd, 0x0A, 3, buffer) != 3)
+            return -1;
 
-        buffer[0] = 0x0A;
-        WRITE(1);
-
-        READ(3);
-        if (buffer[0] != 0x48 ||
-            buffer[1] != 0x34 ||
-            buffer[2] != 0x33)
+        if (buffer[0] != 0x48 || buffer[1] != 0x34 || buffer[2] != 0x33)
             return -1;
     }
 
     return 0;
 }
 
-int HMC5883L_Configure(int file, const struct HMC5883L *device)
+int HMC5883L_Configure(int ifd, struct HMC5883L *device)
 {
-    unsigned char buffer[3];
+    unsigned char data[2];
 
-    buffer[0] = 0x00;
-    buffer[1] = (device->samples & 0x60) |
-        (device->outputRate & 0x1C) |
-        (device->measurementMode & 0x03);
-    buffer[2] = (device->gain & 0xE0);
-    WRITE(3);
+    // Configuration Register A: 0x00
+    data[0] = (device->samples & 0x60) |
+              (device->outputRate & 0x1C) |
+              (device->measurementMode & 0x03);
+    if (pi2cWriteBytesToReg(ifd, 0x00, 1, data) != 2)
+        return -1;
+
+    // Configuration Register B: 0x01
+    data[0] = (device->gain & 0xE0);
+    if (pi2cWriteBytesToReg(ifd, 0x01, 1, data) != 2)
+        return -1;
 
     return 0;
 }
 
-int HMC5883L_SetContinuousMeasurement(int file)
+int HMC5883L_SetContinuousMeasurement(int ifd)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x02;
-    buffer[1] = 0x00;
-    WRITE(2);
-
-    return 0;
+    unsigned char mode = 0x00;
+    return pi2cWriteByteToReg(ifd, 0x02, mode);
 }
 
-int HMC5883L_SetIdle(int file)
+int HMC5883L_SetIdle(int ifd)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x02;
-    buffer[1] = 0x03;
-    WRITE(2);
-
-    return 0;
+    unsigned char mode = 0x03;
+    return pi2cWriteByteToReg(ifd, 0x02, mode);
 }
 
-int HMC5883L_SetSingleMeasurement(int file)
+int HMC5883L_SetSingleMeasurement(int ifd)
 {
-    unsigned char buffer[2];
-
-    buffer[0] = 0x02;
-    buffer[1] = 0x01;
-    WRITE(2);
-
-    return 0;
+    unsigned char mode = 0x01;
+    return pi2cWriteByteToReg(ifd, 0x02, mode);
 }
 
-int HMC5883L_ReadData(int file, short *x, short *y, short *z)
+int HMC5883L_ReadData(int ifd, short *x, short *y, short *z)
 {
     unsigned char buffer[6];
+    if (pi2cReadBytes(ifd, 0x03, 6, buffer) != 6)
+        return -1;
 
-    buffer[0] = 0x03;
-    WRITE(1);
-
-    READ(6);
     *x = ((buffer[0]) << 8) | buffer[1];
-    *y = ((buffer[4]) << 8) | buffer[5];
     *z = ((buffer[2]) << 8) | buffer[3];
+    *y = ((buffer[4]) << 8) | buffer[5];
 
     return 0;
 }
 
-int HMC5883L_ReadDataReady(int file, bool *ready)
+int HMC5883L_ReadDataReady(int ifd, bool *ready)
 {
-    unsigned char buffer[1];
+    unsigned char val = 0;
+    if (pi2cReadBytes(ifd, 0x09, 1, &val) != 1)
+        return -1;
 
-    buffer[0] = 0x09;
-    WRITE(1);
-
-    READ(1);
-    *ready = (buffer[0] & 0x01);
-
+    *ready = (val & 0x01);
     return 0;
 }
 
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <linux/i2c-dev.h>
-#include <fcntl.h>
 
-#include "itg3200.h"
-
-#define READ(N) \
-	if (read(file, buffer, N) != N) \
-		return -1;
-
-#define WRITE(N) \
-	if (write(file, buffer, N) != N) \
-		return -1;
-
-int ITG3200_Init(int file, unsigned char id, bool check)
+int ITG3200_Init(int ifd, unsigned char id, bool check)
 {
-    if (ioctl(file, I2C_SLAVE, id) < 0)
+    if (ioctl(fdTab[ifd].fd, I2C_SLAVE, id) < 0)
         return -1;
 
     if (check)
     {
-        unsigned char buffer[1];
-
-        buffer[0] = 0x00;
-        WRITE(1);
-
-        READ(1);
-        if (buffer[0] != id)
+        unsigned char val = 0;
+        if (pi2cReadBytes(ifd, 0x00, 1, &val) != 1 || val != id)
             return -1;
     }
 
     return 0;
 }
 
-int ITG3200_ConfigureAcquisition(int file, const struct ITG3200_Acquisition *conf)
+int ITG3200_ConfigureAcquisition(int ifd, const struct ITG3200_Acquisition *conf)
 {
-    unsigned char buffer[3];
+    unsigned char data[2];
+    data[0] = conf->sampleRateDivider;
+    data[1] = 0x18 | (conf->lowPassFilter & 0x07);
 
-    buffer[0] = 0x15;
-    buffer[1] = conf->sampleRateDivider;
-    buffer[2] = 0x18 | (conf->lowPassFilter & 0x07);
-    WRITE(3);
+    return pi2cWriteBytesToReg(ifd, 0x15, 2, data);
+}
+
+int ITG3200_ConfigureInterrupt(int ifd, const struct ITG3200_Interrupts *conf)
+{
+    unsigned char val = (conf->active & 0x80) |
+                        (conf->drive & 0x40) |
+                        (conf->latch & 0x20) |
+                        (conf->clear & 0x10) |
+                        (conf->enable & 0x05);
+
+    return pi2cWriteByteToReg(ifd, 0x17, val);
+}
+
+int ITG3200_ConfigurePower(int ifd, const struct ITG3200_Power *conf)
+{
+    unsigned char val = (conf->sleep ? 0x40 : 0x00) |
+                        (conf->standby & 0x38) |
+                        (conf->clockSource & 0x07);
+
+    return pi2cWriteByteToReg(ifd, 0x3E, val);
+}
+
+int ITG3200_ReadData(int ifd, short *x, short *y, short *z)
+{
+    unsigned char data[6];
+    if (pi2cReadBytes(ifd, 0x1D, 6, data) != 6)
+        return -1;
+
+    *y = ((data[0] << 8) | data[1]);
+    *x = ((data[2] << 8) | data[3]);
+    *z = ((data[4] << 8) | data[5]);
 
     return 0;
 }
 
-int ITG3200_ConfigureInterrupt(int file, const struct ITG3200_Interrupts *conf)
+int ITG3200_ReadInterruptSources(int ifd, enum ITG3200_Interrupt *sources)
 {
-    unsigned char buffer[2];
+    unsigned char val = 0;
+    if (pi2cReadBytes(ifd, 0x1A, 1, &val) != 1)
+        return -1;
 
-    buffer[0] = 0x17;
-    buffer[1] = (conf->active & 0x80) |
-        (conf->drive & 0x40) |
-        (conf->latch & 0x20) |
-        (conf->clear & 0x10) |
-        (conf->enable & 0x05);
-    WRITE(2);
-
+    *sources = val;
     return 0;
 }
 
-int ITG3200_ConfigurePower(int file, const struct ITG3200_Power *conf)
+int ITG3200_ReadTemperature(int ifd, short *temperature)
 {
-    unsigned char buffer[2];
+    unsigned char data[2];
+    if (pi2cReadBytes(ifd, 0x1B, 2, data) != 2)
+        return -1;
 
-    buffer[0] = 0x3E;
-    buffer[1] = (conf->sleep ? 0x40 : 0x00) |
-        (conf->standby & 0x38) |
-        (conf->clockSource & 0x07);
-    WRITE(2);
-
-    return 0;
-}
-
-int ITG3200_ReadData(int file, short *x, short *y, short *z)
-{
-    unsigned char buffer[6];
-
-    buffer[0] = 0x1D;
-    WRITE(1);
-
-    READ(6);
-    *x = ((buffer[2] << 8) | buffer[3]);
-    *y = ((buffer[0] << 8) | buffer[1]);
-    *z = ((buffer[4] << 8) | buffer[5]);
-
-    return 0;
-}
-
-int ITG3200_ReadInterruptSources(int file, enum ITG3200_Interrupt *sources)
-{
-    unsigned char buffer[1];
-
-    buffer[0] = 0x1A;
-    WRITE(1);
-
-    READ(1);
-    *sources = buffer[0];
-
-    return 0;
-}
-
-int ITG3200_ReadTemperature(int file, short *temperature)
-{
-    unsigned char buffer[2];
-
-    buffer[0] = 0x1B;
-    WRITE(1);
-
-    READ(2);
-    *temperature = ((buffer[0] << 8) | buffer[1]);
-
+    *temperature = (data[0] << 8) | data[1];
     return 0;
 }
 
@@ -676,7 +529,6 @@ int main(int argc, char **argv) {
             euler.angle.roll * M_PI / 180.0,
             euler.angle.yaw * M_PI / 180.0);
 
-        fflush(stdout);
 
         t0 = t1;
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
