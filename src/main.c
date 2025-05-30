@@ -974,26 +974,12 @@ void mainEmergencyLanding() {
 
 static void pilotModeManualRc() {
 
-    static char* PY_CODE_CACHE = NULL;
-
-    if(PY_CODE_CACHE == NULL)
-    {
-        
-    }
-    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
-            
-    //Py_Initialize();
-    
-    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
-            
-    lprintf(0, "%s: Standby\n", PPREFIX());
     // In this mode the drone is controller by the joystick or similar
     manualControlInit(&uu->rc.roll, &uu->config.manual_rc_roll);
     manualControlInit(&uu->rc.pitch, &uu->config.manual_rc_pitch);
     manualControlInit(&uu->rc.yaw, &uu->config.manual_rc_yaw);
     manualControlInit(&uu->rc.altitude, &uu->config.manual_rc_altitude);
 
-    lprintf(0, "%s: Standby\n", PPREFIX());
     timeLineInsertEvent(UTIME_AFTER_MSEC(10), manualControlRegularCheck, NULL);
     
     uu->flyStage = FS_STANDBY;
@@ -1011,15 +997,12 @@ static void pilotModeManualRc() {
         
         pilotLaunchPoseClear(NULL);
         
-        #if 0
-
         while (uu->flyStage == FS_STANDBY) {
             lprintf(0, "%s: in the polling loop\n", PPREFIX());
         
             raspilotPoll() ;
         }
 
-        #endif
         
         lprintf(0, "%s: polling loop out\n", PPREFIX());
         
@@ -1061,7 +1044,7 @@ static void pilotModeManualRc() {
 // 'mission' in the file 'mission.c' and setup your mission there
 
 int main(int argc, char **argv) {
-    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 0);
+    //lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 0);
     
     raspilotInit(argc, argv);
     lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 1);
