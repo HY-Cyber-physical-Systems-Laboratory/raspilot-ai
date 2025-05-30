@@ -1015,11 +1015,15 @@ static void pilotModeManualRc() {
         
         pilotLaunchPoseClear(NULL);
         
+        #if 0
+
         while (uu->flyStage == FS_STANDBY) {
             lprintf(0, "%s: in the polling loop\n", PPREFIX());
         
             raspilotPoll() ;
         }
+
+        #endif
         
         lprintf(0, "%s: polling loop out\n", PPREFIX());
         

@@ -21,24 +21,24 @@ int main(int argc, char **argv) {
     optRate = 1000.0; 			// default rate 1kHz
     
     for(i=1; i<argc; i++) {
-	if (strcmp(argv[i], "-s") == 0) {
-	    // share i2c. Do not reset shared semaphores
-	    optSharedI2cFlag = 1;
-	} else if (strcmp(argv[i], "-r") == 0) {
-	    // refresh rate in Hz
-	    i++;
-	    if (i<argc) optRate = strtod(argv[i], NULL);
-	} else {
-	    optI2cPath = argv[i];
-	}
+		if (strcmp(argv[i], "-s") == 0) {
+			// share i2c. Do not reset shared semaphores
+			optSharedI2cFlag = 1;
+		} else if (strcmp(argv[i], "-r") == 0) {
+			// refresh rate in Hz
+			i++;
+			if (i<argc) optRate = strtod(argv[i], NULL);
+		} else {
+			optI2cPath = argv[i];
+		}
     }	
     
     if (optSharedI2cFlag) pi2cInit(optI2cPath, 1);
 
 
     if (!ms5611.begin(optI2cPath)) {
-	fprintf(stderr, "%s:%f: Can't connect\n", __FILE__, __LINE__);
-	return(-1);
+		fprintf(stderr, "%s:%f: Can't connect\n", __FILE__, __LINE__);
+		return(-1);
     }
 
     for(;;) {
