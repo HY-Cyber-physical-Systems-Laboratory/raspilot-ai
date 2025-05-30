@@ -6,7 +6,8 @@
 #include "common.h"
 
 void missionLoiter(double loiterTime, double altitude) {
-
+    lprintf(1, "%s: target mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
+    
     raspilotLaunch(uu->config.drone_min_altitude + 0.02);
 
     lprintf(1, "%s: mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
