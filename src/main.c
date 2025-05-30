@@ -978,21 +978,14 @@ static void pilotModeManualRc() {
 
     if(PY_CODE_CACHE == NULL)
     {
-        PY_CODE_CACHE = strDuplicate(
-            "from raspilot import *\n"
-            "from time import sleep\n"
-            "import sys\n"
-            "\n"
-            "def main():\n"
-            "    while True:\n"
-            "        raspilotPoll()\n"
-            "        sleep(0.01)\n"
-        );
+        
     }
-
-    Py_Initialize();
+    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
+            
+    //Py_Initialize();
     
-
+    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
+            
     lprintf(0, "%s: Standby\n", PPREFIX());
     // In this mode the drone is controller by the joystick or similar
     manualControlInit(&uu->rc.roll, &uu->config.manual_rc_roll);
@@ -1074,6 +1067,7 @@ int main(int argc, char **argv) {
     lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 1);
     
     switch (uu->config.pilot_main_mode) {
+
         case MODE_MOTOR_PWM_CALIBRATION:
             pilotModeMotorPwmCalibrationAndExit(1);
         break;
@@ -1084,6 +1078,7 @@ int main(int argc, char **argv) {
         
         case MODE_MANUAL_RC:
             
+            lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
             ANOTATION_LOGIC("DRONE_MODE", "DRONE_MANUAL_RC", {
                 /*
                     MODE_MANUAL_RC makes drone controll as RC controller input
@@ -1112,6 +1107,7 @@ int main(int argc, char **argv) {
                     //todo: implement AI_DRONE and implements pilotModeManualAI() function.
                }
             });
+            lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 4321);
             pilotModeManualRc();
         break;
 
