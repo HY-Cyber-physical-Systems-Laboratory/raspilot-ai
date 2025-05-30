@@ -171,11 +171,11 @@
 
 #if 1
 	{
-	    name: "gyro-mpu6050-magwick-shm",
+	    name: "gadxl345+hcm5883l+itg3200",
 	    connection : {
 		type: "DCT_COMMAND_BASH",
 		// I am using refresh 1kz, DPL filter mode 4, so latency at least 8ms
-		command: "killall -q -9 mpu6050-shm; sleep 0.5; exec chrt -r 10 taskset -c 3 ../tool/imu/gy-87/mpu6050-shm -s -f 4 -r 1000 /dev/i2c-1",
+		command: "killall -q -9 adxl345+hcm5883l+itg3200; sleep 0.5; exec chrt -r 10 taskset -c 3 ../tool/imu/gy-85/adxl345+hcm5883l+itg3200 -s -f 4 -r 1000 /dev/i2c-1",
 	    },
 	    warming_time: 15.0,
 	    // positive roll in mount_rpy makes left side up
