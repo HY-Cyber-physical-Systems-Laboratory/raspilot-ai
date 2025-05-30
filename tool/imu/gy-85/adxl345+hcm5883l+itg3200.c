@@ -437,7 +437,7 @@ static int gConfigure(int gFile)
 }
 
 int main(int argc, char **argv) {
-    setbuf(stdout, NULL); 
+    //setbuf(stdout, NULL); 
     double 	t0, t1, samplePeriod;
     int		i, usleepTime;
     int		magFd;
