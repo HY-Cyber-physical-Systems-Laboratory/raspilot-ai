@@ -1068,7 +1068,10 @@ static void pilotModeManualRc() {
 // 'mission' in the file 'mission.c' and setup your mission there
 
 int main(int argc, char **argv) {
+    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 0);
+    
     raspilotInit(argc, argv);
+    lprintf(0, "%s: Warning: testing motor %d\n", PPREFIX(), 1);
     
     switch (uu->config.pilot_main_mode) {
         case MODE_MOTOR_PWM_CALIBRATION:
