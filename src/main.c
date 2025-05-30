@@ -993,18 +993,21 @@ static void pilotModeManualRc() {
     Py_Initialize();
     
 
+    lprintf(0, "%s: Standby\n", PPREFIX());
     // In this mode the drone is controller by the joystick or similar
     manualControlInit(&uu->rc.roll, &uu->config.manual_rc_roll);
     manualControlInit(&uu->rc.pitch, &uu->config.manual_rc_pitch);
     manualControlInit(&uu->rc.yaw, &uu->config.manual_rc_yaw);
     manualControlInit(&uu->rc.altitude, &uu->config.manual_rc_altitude);
 
+    lprintf(0, "%s: Standby\n", PPREFIX());
     timeLineInsertEvent(UTIME_AFTER_MSEC(10), manualControlRegularCheck, NULL);
     
     uu->flyStage = FS_STANDBY;
     
     timeLineInsertEvent(UTIME_AFTER_MSEC(2), pilotRegularStabilisationTick, NULL);
-
+    lprintf(0, "%s: Standby\n", PPREFIX());
+    
     // This is the main loop when raspilot is in manual rc mode
     while (uu->flyStage == FS_STANDBY) {
         uu->rc.altitude.value = -9999;
