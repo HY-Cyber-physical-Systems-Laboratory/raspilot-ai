@@ -36,16 +36,16 @@ int main(int argc, char **argv) {
     optRate = 1000.0; 			// default rate 1kHz
     
     for(i=1; i<argc; i++) {
-	if (strcmp(argv[i], "-s") == 0) {
-	    // share i2c. Do not reset shared semaphores
-	    optSharedI2cFlag = 1;
-	} else if (strcmp(argv[i], "-r") == 0) {
-	    // refresh rate in Hz
-	    i++;
-	    if (i<argc) optRate = strtod(argv[i], NULL);
-	} else {
-	    optI2cPath = argv[i];
-	}
+        if (strcmp(argv[i], "-s") == 0) {
+            // share i2c. Do not reset shared semaphores
+            optSharedI2cFlag = 1;
+        } else if (strcmp(argv[i], "-r") == 0) {
+            // refresh rate in Hz
+            i++;
+            if (i<argc) optRate = strtod(argv[i], NULL);
+        } else {
+            optI2cPath = argv[i];
+        }
     }	
     
     if (optSharedI2cFlag) pi2cInit(optI2cPath, 1);
@@ -124,15 +124,18 @@ int main(int argc, char **argv) {
 	double temp;
 
 	mpu.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
-	accelerometer.axis.x = AcX / 16384.0; 
+	
+    accelerometer.axis.x = AcX / 16384.0; 
 	accelerometer.axis.y = AcY / 16384.0; 
 	accelerometer.axis.z = AcZ / 16384.0; 
-	gyroscope.axis.x = GyX /  131.0;
+	
+    gyroscope.axis.x = GyX /  131.0;
 	gyroscope.axis.y = GyY / 131.0;
 	gyroscope.axis.z = GyZ / 131.0;
 
 	// read magnetometer
 	pi2cReadBytes(magFd, 0x03, 6, mm);
+
 	magnetometer.axis.x = ((int16_t)mm[0] << 8) | mm[1];
 	magnetometer.axis.y = ((int16_t)mm[2] << 8) | mm[3];
 	magnetometer.axis.z = ((int16_t)mm[4] << 8) | mm[5];
