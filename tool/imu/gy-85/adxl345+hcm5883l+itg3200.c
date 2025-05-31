@@ -532,45 +532,24 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        bool gyroStable = fabsf(gyroscope.axis.x) < gyroThreshold &&
-                        fabsf(gyroscope.axis.y) < gyroThreshold &&
-                        fabsf(gyroscope.axis.z) < gyroThreshold;
+        bool xStable = fabsf(gyroscope.axis.x) < gyroThreshold;
+        bool yStable = fabsf(gyroscope.axis.y) < gyroThreshold;
+        bool zStable = fabsf(gyroscope.axis.z) < gyroThreshold;
 
-        /* ── 오프셋 보정은 '안정하지 않을 때'만 적용 ── */
-        if (gyroStable) {
-            gyroscope = FusionOffsetUpdate(&offset, gyroscope);
-        }
+        // AHRS로부터 계산된 Euler (rad)
+        FusionEuler computedEuler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
 
-        /* ── AHRS 업데이트 or 각도 유지 ── */
-        FusionEuler euler;          // 이번 회차에 출력할 각도
+        // 삼항 연산자로 각 축별로 “안정하면 이전 값, 불안정하면 새 값”을 선택
+        FusionEuler outputEuler;
+        outputEuler.angle.roll  = xStable ? prevEuler.angle.roll  : computedEuler.angle.roll;
+        outputEuler.angle.pitch = yStable ? prevEuler.angle.pitch : computedEuler.angle.pitch;
+        outputEuler.angle.yaw   = zStable ? prevEuler.angle.yaw   : computedEuler.angle.yaw;
 
-        if (!gyroStable) {
-            /* 보정·업데이트 후 새 자세 계산 */
-            gyroscope = FusionCalibrationInertial(gyroscope,
-                                                gyroscopeMisalignment,
-                                                gyroscopeSensitivity,
-                                                gyroscopeOffset);
-            accelerometer = FusionCalibrationInertial(accelerometer,
-                                                    accelerometerMisalignment,
-                                                    accelerometerSensitivity,
-                                                    accelerometerOffset);
-
-            FusionAhrsUpdateNoMagnetometer(&ahrs,
-                                        gyroscope,
-                                        accelerometer,
-                                        samplePeriod);
-
-            euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-            prevEuler = euler;      // 다음 턴을 위해 저장
-        } else {
-            /* 자이로가 불안정 → 직전 값을 그대로 사용 */
-            euler = prevEuler;
-        }
-       
+        // 화면에 출력할 때는 rad→deg로 변환
         printf("rpy %7.5f %7.5f %7.5f\n",
-            euler.angle.pitch * M_PI / 180.0,
-            euler.angle.roll  * M_PI / 180.0,
-            euler.angle.yaw   * M_PI / 180.0);
+            outputEuler.angle.pitch * 180.0 / M_PI,
+            outputEuler.angle.roll  * 180.0 / M_PI,
+            outputEuler.angle.yaw   * 180.0 / M_PI);
 
         printf("eacc %7.5f %7.5f %7.5f\n",
             accelerometer.axis.x,
@@ -580,6 +559,8 @@ int main(int argc, char **argv) {
         printf("pose %7.5f %7.5f %7.5f\n",
                     0.0,0.0,0.0);
         t0 = t1;
+        // 다음 반복을 위해 prevEuler 갱신
+        prevEuler = outputEuler;
         
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
