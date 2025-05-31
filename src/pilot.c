@@ -1259,13 +1259,15 @@ static double pilotComputeAutoThrustForAltitudeHold(double targetAltitude) {
             PPREFIX(), targetAltitudeSpeed, altitudeSpeed, pid1);
 
     // PID 계산 2: Z축 가속도 기반 보조 제어
-    double accZ = uu->droneLastAcceleration[2];
+    double accZ = -(uu->droneLastAcceleration[2] - 0.8);
+
+
     double pid2 = pidControllerStep(&uu->pidAccAltitude, 0.0, accZ, tdTick);
     lprintf(0, "%s: PID(accZ) -> target: 0.0, current: %.4f, output: %.4f", 
             PPREFIX(), accZ, pid2);
 
     // 최종 thrust
-    thrust = pid1 + 0;
+    thrust = pid1 + pid2;
     lprintf(0, "%s: Final auto thrust output = %.4f", PPREFIX(), thrust);
 
     lprintf(0, "%s: [END] pilotComputeAutoThrustForAltitudeHold", PPREFIX());
