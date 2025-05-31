@@ -526,7 +526,7 @@ int main(int argc, char **argv) {
         accelerometer.axis.y = aRawY / 256.0f;
         accelerometer.axis.z = aRawZ / 256.0f;
 
-        const float gyroThreshold = 0.001f;  // deg/s
+        const float gyroThreshold = 0.0001f;  // deg/s
         gyroscope.axis.x = gRawX / 14.375f;     // ITG3200는 14.375 LSB/(°/s)
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
