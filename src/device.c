@@ -619,16 +619,16 @@ void deviceParseInputStreamLineToInputBuffer(struct deviceData *dd, char *s, int
 		r = -1;
 	    }
 	    if (r == 0) {
-		ddd->totalNumberOfRecordsReceivedForStatistics ++;
-		if (deviceDataStreamVectorLength[ddd->type] > 0) {
-		    assert(inputVector != NULL);
-		    assert(ddd->input != NULL);
-		    raspilotRingBufferAddElem(&ddd->input->buffer, sampletime, inputVector);
-		    ddd->input->confidence = 1.0;
-		    lprintf(90 - ddd->debug_level, "%s: %s: %s: time: %lld: Parsed %s\n", PPREFIX(), dd->name, tag, (long long)sampletime, arrayWithDimToStr_st(inputVector, ddd->input->buffer.vectorsize));
-		}
+            ddd->totalNumberOfRecordsReceivedForStatistics ++;
+            if (deviceDataStreamVectorLength[ddd->type] > 0) {
+                assert(inputVector != NULL);
+                assert(ddd->input != NULL);
+                raspilotRingBufferAddElem(&ddd->input->buffer, sampletime, inputVector);
+                ddd->input->confidence = 1.0;
+                lprintf(90 - ddd->debug_level, "%s: %s: %s: time: %lld: Parsed %s\n", PPREFIX(), dd->name, tag, (long long)sampletime, arrayWithDimToStr_st(inputVector, ddd->input->buffer.vectorsize));
+            }
 	    } else {
-		printf("%s:  %s: Error %d when parsing line: %*.*s\n", PPREFIX(), dd->name, r, n, n, s);
+		    printf("%s:  %s: Error %d when parsing line: %*.*s\n", PPREFIX(), dd->name, r, n, n, s);
 	    }
 	}
     }
