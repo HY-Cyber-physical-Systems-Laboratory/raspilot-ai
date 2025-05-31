@@ -491,7 +491,7 @@ int main(int argc, char **argv) {
     // 센서 초기화
     int accelFd = pi2cOpen(optI2cPath, 0x53);
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
-    int compFd  = pi2cOpen(optI2cPath, O_RDWR);
+    // int compFd  = pi2cOpen(optI2cPath, O_RDWR);
 
 
     if (aConfigure(accelFd)) {
@@ -504,10 +504,6 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    if (cConfigure(compFd)) {
-        fprintf(stderr, "Sensor init failed\n");
-        return -1;
-    }
 
 
     signal(SIGINT, taskStop);
