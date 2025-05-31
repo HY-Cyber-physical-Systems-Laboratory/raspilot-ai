@@ -507,8 +507,8 @@ void raspilotBusyWaitUntilTimeoutOrStandby(double sleeptime) {
     setCurrentTime();
     tt = currentTime.dtime;
     while (currentTime.dtime < tt + sleeptime && uu->flyStage != FS_STANDBY){ 
-        lprintf(0, "%s: currentTime = %.6f, targetTime = %.6f\n",
-            PPREFIX(), currentTime.dtime, tt + sleeptime);
+        //lprintf(0, "%s: currentTime = %.6f, targetTime = %.6f\n",
+        //    PPREFIX(), currentTime.dtime, tt + sleeptime);
 
         raspilotPoll();
             

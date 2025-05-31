@@ -1205,46 +1205,71 @@ static void pilotAltitudeThrustAverageAndBatteryStatus(double altitudeThrust) {
 
 // This is the main function computing main thrust to reach altitude goal
 static double pilotComputeAutoThrustForAltitudeHold(double targetAltitude) {
-    double 	thrust;
-    double 	targetAltitudeSpeed, altitudeSpeed, altitude;
-    double 	tdTick;
-    
-    // if not enough of data do nothing
-    if (uu->longBufferPosition.n <= 2) return(-1);
-    if (uu->longBufferRpy.n <= 2) return(-1);
+    double thrust;
+    double targetAltitudeSpeed, altitudeSpeed, altitude;
+    double tdTick;
 
-    // If we run out of battery land!
-    if (uu->averageAltitudeThrust >= uu->config.motor_altitude_thrust_max && uu->flyStage == FS_FLY) {
-	lprintf(1, "%s: Info: Battery low. Landing!\n", PPREFIX());
-	uu->flyStage = FS_EMERGENCY_LANDING;
+    lprintf(0, "%s: [START] pilotComputeAutoThrustForAltitudeHold with targetAltitude = %.4f", 
+            PPREFIX(), targetAltitude);
+
+    // 데이터 부족 시 리턴
+    if (uu->longBufferPosition.n <= 2) {
+        lprintf(0, "%s: [WARN] Not enough position data (n = %d)", PPREFIX(), uu->longBufferPosition.n);
+        return -1;
+    }
+    if (uu->longBufferRpy.n <= 2) {
+        lprintf(0, "%s: [WARN] Not enough RPY data (n = %d)", PPREFIX(), uu->longBufferRpy.n);
+        return -1;
     }
 
-    if (uu->flyStage == FS_EMERGENCY_LANDING) targetAltitude = -0.1;
-    
-    tdTick = pilotGetNormalizedLastStabilizationTickLength();
+    // 배터리 부족으로 인한 자동 착륙
+    if (uu->averageAltitudeThrust >= uu->config.motor_altitude_thrust_max && uu->flyStage == FS_FLY) {
+        lprintf(1, "%s: [INFO] Battery low (average thrust = %.4f >= max = %.4f). Initiating emergency landing.", 
+                PPREFIX(), uu->averageAltitudeThrust, uu->config.motor_altitude_thrust_max);
+        uu->flyStage = FS_EMERGENCY_LANDING;
+    }
 
+    // 비상 착륙일 경우 목표 고도 강제로 낮게 설정
+    if (uu->flyStage == FS_EMERGENCY_LANDING) {
+        lprintf(0, "%s: [INFO] Emergency landing in progress. Forcing targetAltitude = -0.1", PPREFIX());
+        targetAltitude = -0.1;
+    }
+
+    // 루프 주기 시간
+    tdTick = pilotGetNormalizedLastStabilizationTickLength();
+    lprintf(0, "%s: Normalized tick length = %.6f", PPREFIX(), tdTick);
+
+    // 현재 고도 및 속도
     altitude = uu->droneLastPosition[2];
     altitudeSpeed = uu->droneLastVelocity[2];
+    lprintf(0, "%s: Current altitude = %.4f, velocity Z = %.4f", 
+            PPREFIX(), altitude, altitudeSpeed);
 
+    // 목표 고도 속도 계산
     targetAltitudeSpeed = (targetAltitude - altitude) / uu->config.pilot_reach_goal_position_time;
-    // In the old implementatio this was multiplied by 2 supposing we have to reach target speed in middle time?
-    // Don't think it makes any difference
-    // targetAltitudeSpeed = 2.0 * (targetAltitude - altitude) / uu->config.pilot_reach_goal_position_time;
+    lprintf(0, "%s: Raw targetAltitudeSpeed = %.4f", PPREFIX(), targetAltitudeSpeed);
 
+    // 속도 제한
     vec1TruncateToSize(&targetAltitudeSpeed, uu->config.drone_max_speed, 0, "target altitude speed");
+    lprintf(0, "%s: Truncated targetAltitudeSpeed = %.4f", PPREFIX(), targetAltitudeSpeed);
 
-    lprintf(30, "%s: Info: Altitude target: %g current: %g. Altitude speed target: %g current: %g\n", PPREFIX(), targetAltitude, altitude, targetAltitudeSpeed, altitudeSpeed);
-    
-    // get the Altitude thrust
-    thrust = pidControllerStep(&uu->pidAltitude, targetAltitudeSpeed, altitudeSpeed, tdTick);
+    // PID 계산 1: 속도 기반 고도 제어
+    double pid1 = pidControllerStep(&uu->pidAltitude, targetAltitudeSpeed, altitudeSpeed, tdTick);
+    lprintf(0, "%s: PID(altitude) -> target: %.4f, current: %.4f, output: %.4f", 
+            PPREFIX(), targetAltitudeSpeed, altitudeSpeed, pid1);
 
-#if 1
-    // This may improve altitude stability
-    // TODO: Maybe acceleration data shall be used in the D part of the PID above, or be added to altitude speed?
-    thrust += pidControllerStep(&uu->pidAccAltitude, 0, uu->droneLastAcceleration[2], tdTick);
-#endif
-    
-    return(thrust);
+    // PID 계산 2: Z축 가속도 기반 보조 제어
+    double accZ = uu->droneLastAcceleration[2];
+    double pid2 = pidControllerStep(&uu->pidAccAltitude, 0.0, accZ, tdTick);
+    lprintf(0, "%s: PID(accZ) -> target: 0.0, current: %.4f, output: %.4f", 
+            PPREFIX(), accZ, pid2);
+
+    // 최종 thrust
+    thrust = pid1 + pid2;
+    lprintf(0, "%s: Final auto thrust output = %.4f", PPREFIX(), thrust);
+
+    lprintf(0, "%s: [END] pilotComputeAutoThrustForAltitudeHold", PPREFIX());
+    return thrust;
 }
 
 static double pilotComputeAssistedThrustForAltitude() {
@@ -1253,36 +1278,56 @@ static double pilotComputeAssistedThrustForAltitude() {
     vec3			acceleration;
     double			accZ;
 
+    lprintf(0, "%s: [START] pilotComputeAssistedThrustForAltitude", PPREFIX());
+
     if (uu->flyStage == FS_EMERGENCY_LANDING) {
-	thrust = uu->config.motor_thrust_min_spin;
+        thrust = uu->config.motor_thrust_min_spin;
+        lprintf(0, "%s: Emergency landing detected. Using min spin thrust: %.4f",
+                PPREFIX(), thrust);
     } else {
-	regressionBufferGetMean(&uu->shortBufferAcceleration, &mtime, acceleration);
-	accZ = acceleration[2];
-	thrust = uu->rc.altitude.value;
-	// the idea of PID assistance is that we keep climbing speed constant, hence acceleration zero
-	// Hmm. how to incorporate barometer and some kind of altitude hold here ?
-	thrust += pidControllerStep(&uu->pidAccAltitude, 0, accZ, 1.0/uu->stabilization_loop_Hz);
+        regressionBufferGetMean(&uu->shortBufferAcceleration, &mtime, acceleration);
+        accZ = acceleration[2];
+
+        lprintf(0, "%s: Regression buffer mean -> mtime: %.6f, accX: %.4f, accY: %.4f, accZ: %.4f",
+                PPREFIX(), mtime, acceleration[0], acceleration[1], accZ);
+
+        thrust = uu->rc.altitude.value;
+        lprintf(0, "%s: Initial altitude RC value: %.4f", PPREFIX(), thrust);
+
+        // PID 보정 입력값: 목표가 0 (가속도), 실제 accZ
+        double dt = 1.0 / uu->stabilization_loop_Hz;
+        double pid_output = pidControllerStep(&uu->pidAccAltitude, 0.0, accZ, dt);
+
+        lprintf(0, "%s: PID step -> target: 0.0, accZ: %.4f, dt: %.6f, pid_output: %.4f",
+                PPREFIX(), accZ, dt, pid_output);
+
+        thrust += pid_output;
+
+        lprintf(0, "%s: Final computed assisted thrust: %.4f", PPREFIX(), thrust);
     }
-    return(thrust);
+
+    lprintf(0, "%s: [END] pilotComputeAssistedThrustForAltitude", PPREFIX());
+    return thrust;
 }
+
 
 static int pilotComputeTargetAltitudeThrust(double *altitudeThrust) {
     double 		thrust, rpFactor;
 
     if (uu->config.pilot_main_mode == MODE_MANUAL_RC) {
-	if (uu->config.manual_rc_altitude.mode == RCM_PASSTHROUGH) {
-	    if (uu->flyStage == FS_EMERGENCY_LANDING) {
-		thrust = uu->config.motor_thrust_min_spin;
-	    } else {
-		thrust = uu->rc.altitude.value;
-	    }
-	} else if (uu->config.manual_rc_altitude.mode == RCM_ACRO) {
-	    thrust = pilotComputeAssistedThrustForAltitude();
-	} else {
-	    thrust = pilotComputeAutoThrustForAltitudeHold(uu->rc.altitude.value);
-	}
+        if (uu->config.manual_rc_altitude.mode == RCM_PASSTHROUGH) {
+            if (uu->flyStage == FS_EMERGENCY_LANDING) {
+            thrust = uu->config.motor_thrust_min_spin;
+            } else {
+            thrust = uu->rc.altitude.value;
+            }
+        } else if (uu->config.manual_rc_altitude.mode == RCM_ACRO) {
+            thrust = pilotComputeAssistedThrustForAltitude();
+        } else {
+            thrust = pilotComputeAutoThrustForAltitudeHold(uu->rc.altitude.value);
+        }
     } else {
-	thrust = pilotComputeAutoThrustForAltitudeHold(uu->currentWaypoint.position[2]);
+	    thrust = pilotComputeAutoThrustForAltitudeHold(uu->currentWaypoint.position[2]);
     }
     if (thrust < 0) return(-1);
 
@@ -1434,30 +1479,75 @@ static int pilotComputeTargetRpyThrustForRpyVelocity(vec3 rpyThrusts) {
 }
 
 static int pilotComputeTargetRpyThrust(vec3 rpyThrusts) {
-    int		r;
+    int r;
 
+    lprintf(0, "%s: [START] pilotComputeTargetRpyThrust", PPREFIX());
+    lprintf(0, "%s: pilot_main_mode = %d", PPREFIX(), uu->config.pilot_main_mode);
+
+    // 수동 RC 입력을 사용하는 경우: 목표 각도 설정
     if (uu->config.pilot_main_mode == MODE_MANUAL_RC) {
-	if (uu->config.manual_rc_roll.mode == RCM_TARGET) uu->targetRoll = uu->rc.roll.value;
-	if (uu->config.manual_rc_pitch.mode == RCM_TARGET) uu->targetPitch = uu->rc.pitch.value;
-	if (uu->config.manual_rc_yaw.mode == RCM_TARGET) uu->targetYaw = uu->rc.yaw.value;
+        if (uu->config.manual_rc_roll.mode == RCM_TARGET) {
+            uu->targetRoll = uu->rc.roll.value;
+            lprintf(0, "%s: manual_rc_roll TARGET -> targetRoll = %.4f", PPREFIX(), uu->targetRoll);
+        }
+        if (uu->config.manual_rc_pitch.mode == RCM_TARGET) {
+            uu->targetPitch = uu->rc.pitch.value;
+            lprintf(0, "%s: manual_rc_pitch TARGET -> targetPitch = %.4f", PPREFIX(), uu->targetPitch);
+        }
+        if (uu->config.manual_rc_yaw.mode == RCM_TARGET) {
+            uu->targetYaw = uu->rc.yaw.value;
+            lprintf(0, "%s: manual_rc_yaw TARGET -> targetYaw = %.4f", PPREFIX(), uu->targetYaw);
+        }
     }
-    
+
+    // 회전 속도 타겟 계산
     pilotComputeTargetRpyRotationVelocity();
-    
+    lprintf(0, "%s: Computed target RPY rotation velocities: rollSpeed = %.4f, pitchSpeed = %.4f, yawSpeed = %.4f",
+            PPREFIX(), uu->targetRollRotationSpeed, uu->targetPitchRotationSpeed, uu->targetYawRotationSpeed);
+
+    // RPY 쓰러스트 계산
     if (uu->config.pilot_main_mode == MODE_MANUAL_RC) {
-	if (uu->config.manual_rc_roll.mode == RCM_ACRO) uu->targetRollRotationSpeed = uu->rc.roll.value;
-	if (uu->config.manual_rc_pitch.mode == RCM_ACRO) uu->targetPitchRotationSpeed = uu->rc.pitch.value;
-	if (uu->config.manual_rc_yaw.mode == RCM_ACRO) uu->targetYawRotationSpeed = uu->rc.yaw.value;
-	
-	r = pilotComputeTargetRpyThrustForRpyVelocity(rpyThrusts);
-	
-	if (uu->config.manual_rc_roll.mode == RCM_PASSTHROUGH) rpyThrusts[0] = uu->rc.roll.value;
-	if (uu->config.manual_rc_pitch.mode == RCM_PASSTHROUGH) rpyThrusts[1] = uu->rc.pitch.value;
-	if (uu->config.manual_rc_yaw.mode == RCM_PASSTHROUGH) rpyThrusts[2] = uu->rc.yaw.value;	    
+        // ACRO 모드: 조종 입력을 각속도로 해석
+        if (uu->config.manual_rc_roll.mode == RCM_ACRO) {
+            uu->targetRollRotationSpeed = uu->rc.roll.value;
+            lprintf(0, "%s: manual_rc_roll ACRO -> targetRollRotationSpeed = %.4f", PPREFIX(), uu->targetRollRotationSpeed);
+        }
+        if (uu->config.manual_rc_pitch.mode == RCM_ACRO) {
+            uu->targetPitchRotationSpeed = uu->rc.pitch.value;
+            lprintf(0, "%s: manual_rc_pitch ACRO -> targetPitchRotationSpeed = %.4f", PPREFIX(), uu->targetPitchRotationSpeed);
+        }
+        if (uu->config.manual_rc_yaw.mode == RCM_ACRO) {
+            uu->targetYawRotationSpeed = uu->rc.yaw.value;
+            lprintf(0, "%s: manual_rc_yaw ACRO -> targetYawRotationSpeed = %.4f", PPREFIX(), uu->targetYawRotationSpeed);
+        }
+
+        // RPY 쓰러스트 계산
+        r = pilotComputeTargetRpyThrustForRpyVelocity(rpyThrusts);
+        lprintf(0, "%s: RPY thrusts after velocity calc: roll = %.4f, pitch = %.4f, yaw = %.4f",
+                PPREFIX(), rpyThrusts[0], rpyThrusts[1], rpyThrusts[2]);
+
+        // PASSTHROUGH 모드: RC 입력값을 직접 thrust로 사용
+        if (uu->config.manual_rc_roll.mode == RCM_PASSTHROUGH) {
+            rpyThrusts[0] = uu->rc.roll.value;
+            lprintf(0, "%s: manual_rc_roll PASSTHROUGH -> roll thrust = %.4f", PPREFIX(), rpyThrusts[0]);
+        }
+        if (uu->config.manual_rc_pitch.mode == RCM_PASSTHROUGH) {
+            rpyThrusts[1] = uu->rc.pitch.value;
+            lprintf(0, "%s: manual_rc_pitch PASSTHROUGH -> pitch thrust = %.4f", PPREFIX(), rpyThrusts[1]);
+        }
+        if (uu->config.manual_rc_yaw.mode == RCM_PASSTHROUGH) {
+            rpyThrusts[2] = uu->rc.yaw.value;
+            lprintf(0, "%s: manual_rc_yaw PASSTHROUGH -> yaw thrust = %.4f", PPREFIX(), rpyThrusts[2]);
+        }
     } else {
-	r = pilotComputeTargetRpyThrustForRpyVelocity(rpyThrusts);
+        // 자동 모드: 그냥 각속도 기반 쓰러스트 계산
+        r = pilotComputeTargetRpyThrustForRpyVelocity(rpyThrusts);
+        lprintf(0, "%s: [AUTO MODE] RPY thrusts: roll = %.4f, pitch = %.4f, yaw = %.4f",
+                PPREFIX(), rpyThrusts[0], rpyThrusts[1], rpyThrusts[2]);
     }
-    return(r);
+
+    lprintf(0, "%s: [END] pilotComputeTargetRpyThrust (return = %d)", PPREFIX(), r);
+    return r;
 }
 
 // This is the main stabilization function executed each PILOT_STABILIZATION_TICK_MSEC
@@ -1502,6 +1592,7 @@ int64_t pilotScheduleNextTick(double frequency, void (*tickfunction)(void *arg),
     timeLineRescheduleUniqueEvent(nextTickUsec, tickfunction, arg);
     return(nextTickUsec);
 }
+
 static void pilotSetMotorThrust() {
     double 	altitudeThrust;
     vec3 	rpyThrust;
