@@ -1502,24 +1502,42 @@ int64_t pilotScheduleNextTick(double frequency, void (*tickfunction)(void *arg),
     timeLineRescheduleUniqueEvent(nextTickUsec, tickfunction, arg);
     return(nextTickUsec);
 }
-
 static void pilotSetMotorThrust() {
     double 	altitudeThrust;
     vec3 	rpyThrust;
     int 	r;
 
     r = 0;
-    r |= pilotComputeTargetRpyThrust(rpyThrust);
-    r |= pilotComputeTargetAltitudeThrust(&altitudeThrust);
-    if (r == 0) {
-	pilotCombineAllMotorThrusts(rpyThrust[0], rpyThrust[1], rpyThrust[2], altitudeThrust);
-    } else {
-	// We have a problem.
-    lprintf(0, "sexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsex");
 
-	motorsThrustSet(0);
+    // 출력 전 초기화 상태
+    lprintf(0, "%s: [START] pilotSetMotorThrust", PPREFIX());
+
+    // RPY thrust 계산
+    r |= pilotComputeTargetRpyThrust(rpyThrust);
+    lprintf(0, "%s: pilotComputeTargetRpyThrust -> roll: %.4f, pitch: %.4f, yaw: %.4f",
+            PPREFIX(), rpyThrust[0], rpyThrust[1], rpyThrust[2]);
+
+    // 고도 thrust 계산
+    r |= pilotComputeTargetAltitudeThrust(&altitudeThrust);
+    lprintf(0, "%s: pilotComputeTargetAltitudeThrust -> altitudeThrust: %.4f", 
+            PPREFIX(), altitudeThrust);
+
+    if (r == 0) {
+        // 정상 작동, 모터에 쓰러스트 전달
+        lprintf(0, "%s: Calling pilotCombineAllMotorThrusts with roll: %.4f, pitch: %.4f, yaw: %.4f, alt: %.4f",
+                PPREFIX(), rpyThrust[0], rpyThrust[1], rpyThrust[2], altitudeThrust);
+
+        pilotCombineAllMotorThrusts(rpyThrust[0], rpyThrust[1], rpyThrust[2], altitudeThrust);
+    } else {
+        // 오류 발생
+        lprintf(0, "%s: [ERROR] Failed to compute thrust(s). Disabling motors.", PPREFIX());
+
+        motorsThrustSet(0);
     }
+
+    lprintf(0, "%s: [END] pilotSetMotorThrust", PPREFIX());
 }
+
 
 void pilotRegularStabilisationTick(void *d) {
     // This is the main function called at each stabilization tick of standard raspilot
