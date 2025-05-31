@@ -466,7 +466,7 @@ int main(int argc, char **argv) {
 
     // Fusion 초기화
     const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
-    const FusionVector gyroscopeSensitivity = {1.0f, 1.0f, 0.8f};
+    const FusionVector gyroscopeSensitivity = {0.5f, 0.5f, 0.5f};
     const FusionVector gyroscopeOffset = {0.0f, 0.0f, 0.0f};
     const FusionMatrix accelerometerMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
     const FusionVector accelerometerSensitivity = {1.0f, 1.0f, 1.0f};
@@ -491,7 +491,7 @@ int main(int argc, char **argv) {
     // 센서 초기화
     int accelFd = pi2cOpen(optI2cPath, 0x53);
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
-    //int compFd  = pi2cOpen(optI2cPath, O_RDWR);
+    int compFd  = pi2cOpen(optI2cPath, O_RDWR);
 
 
     if (aConfigure(accelFd)) {
@@ -504,6 +504,10 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    if (cConfigure(compFd)) {
+        fprintf(stderr, "Sensor init failed\n");
+        return -1;
+    }
 
 
     signal(SIGINT, taskStop);
@@ -513,6 +517,8 @@ int main(int argc, char **argv) {
     t0 = doubleGetTime();
     
     FusionVector gyroscope, accelerometer;
+
+    FusionEuler prevEuler = { .angle = {0.0f, 0.0f, 0.0f} };
     while (1) {
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
@@ -529,42 +535,44 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        
-        // 타이밍 계산
-        t1 = doubleGetTime();
-        samplePeriod = t1 - t0;
+            
+        bool gyroStable = fabsf(gyroscope.axis.x) < gyroThreshold &&
+                        fabsf(gyroscope.axis.y) < gyroThreshold &&
+                        fabsf(gyroscope.axis.z) < gyroThreshold;
 
-        // 보정
-        gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
-        accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
-        
-        // 오프셋 보정
-
-        if (!(fabsf(gyroscope.axis.x) < gyroThreshold &&
-            fabsf(gyroscope.axis.y) < gyroThreshold &&
-            fabsf(gyroscope.axis.z) < gyroThreshold)) 
-        {
+        /* ── 오프셋 보정은 '안정하지 않을 때'만 적용 ── */
+        if (!gyroStable) {
             gyroscope = FusionOffsetUpdate(&offset, gyroscope);
-            // AHRS 업데이트
-            FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
         }
 
-        const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+        /* ── AHRS 업데이트 or 각도 유지 ── */
+        FusionEuler euler;          // 이번 회차에 출력할 각도
 
-        printf("rpy %7.5f %7.5f %7.5f\n",
-            euler.angle.pitch * M_PI / 180.0,
-            euler.angle.roll * M_PI / 180.0,
-            euler.angle.yaw * M_PI / 180.0);
+        if (gyroStable) {
+            /* 보정·업데이트 후 새 자세 계산 */
+            gyroscope = FusionCalibrationInertial(gyroscope,
+                                                gyroscopeMisalignment,
+                                                gyroscopeSensitivity,
+                                                gyroscopeOffset);
+            accelerometer = FusionCalibrationInertial(accelerometer,
+                                                    accelerometerMisalignment,
+                                                    accelerometerSensitivity,
+                                                    accelerometerOffset);
 
-        printf("eacc %7.5f %7.5f %7.5f\n",
-            accelerometer.axis.x,
-            accelerometer.axis.y,
-            accelerometer.axis.z);
+            FusionAhrsUpdateNoMagnetometer(&ahrs,
+                                        gyroscope,
+                                        accelerometer,
+                                        samplePeriod);
 
-        printf("pose %7.5f %7.5f %7.5f\n",
-                    0.0,0.0,0.0);
+            euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+            prevEuler = euler;      // 다음 턴을 위해 저장
+        } else {
+            /* 자이로가 불안정 → 직전 값을 그대로 사용 */
+            euler = prevEuler;
+        }
+       
+        t0 = t1;
         
-                    t0 = t1;
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
         else if (samplePeriod < 1.0 / optRate) usleepTime++;
         //fflush(stdout);
