@@ -139,7 +139,7 @@ void mission() {
     raspilotPreLaunchSequence(0);
 
     // raspilotBusyWait(9999999);
-    missionLoiter(200.0, 0.60);
+    missionLoiter(200.0, 0.90);
 	
     // missionTestYawLoiter(0.20);
     
