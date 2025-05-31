@@ -532,22 +532,22 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        printf("axis: %7.5f %7.5f %7.5f\n",
-            gyroscope.axis.x, gyroscope.axis.y, gyroscope.axis.z);
+        // printf("axis: %7.5f %7.5f %7.5f\n",
+        //     gyroscope.axis.x, gyroscope.axis.y, gyroscope.axis.z);
             
         bool gyroStable = fabsf(gyroscope.axis.x) < gyroThreshold &&
                         fabsf(gyroscope.axis.y) < gyroThreshold &&
                         fabsf(gyroscope.axis.z) < gyroThreshold;
 
         /* ── 오프셋 보정은 '안정하지 않을 때'만 적용 ── */
-        if (!gyroStable) {
+        if (gyroStable) {
             gyroscope = FusionOffsetUpdate(&offset, gyroscope);
         }
 
         /* ── AHRS 업데이트 or 각도 유지 ── */
         FusionEuler euler;          // 이번 회차에 출력할 각도
 
-        if (gyroStable) {
+        if (!gyroStable) {
             /* 보정·업데이트 후 새 자세 계산 */
             gyroscope = FusionCalibrationInertial(gyroscope,
                                                 gyroscopeMisalignment,
