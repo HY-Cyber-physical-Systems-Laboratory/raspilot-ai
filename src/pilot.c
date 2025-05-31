@@ -1265,7 +1265,7 @@ static double pilotComputeAutoThrustForAltitudeHold(double targetAltitude) {
             PPREFIX(), accZ, pid2);
 
     // 최종 thrust
-    thrust = pid1 + pid2;
+    thrust = pid1 + 0;
     lprintf(0, "%s: Final auto thrust output = %.4f", PPREFIX(), thrust);
 
     lprintf(0, "%s: [END] pilotComputeAutoThrustForAltitudeHold", PPREFIX());
@@ -1540,6 +1540,8 @@ static int pilotComputeTargetRpyThrust(vec3 rpyThrusts) {
             lprintf(0, "%s: manual_rc_yaw PASSTHROUGH -> yaw thrust = %.4f", PPREFIX(), rpyThrusts[2]);
         }
     } else {
+
+
         // 자동 모드: 그냥 각속도 기반 쓰러스트 계산
         r = pilotComputeTargetRpyThrustForRpyVelocity(rpyThrusts);
         lprintf(0, "%s: [AUTO MODE] RPY thrusts: roll = %.4f, pitch = %.4f, yaw = %.4f",
