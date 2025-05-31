@@ -567,6 +567,18 @@ int main(int argc, char **argv) {
             euler = prevEuler;
         }
        
+        printf("rpy %7.5f %7.5f %7.5f\n",
+            euler.angle.pitch * M_PI / 180.0,
+            euler.angle.roll  * M_PI / 180.0,
+            euler.angle.yaw   * M_PI / 180.0);
+            
+        printf("eacc %7.5f %7.5f %7.5f\n",
+            accelerometer.axis.x,
+            accelerometer.axis.y,
+            accelerometer.axis.z);
+
+        printf("pose %7.5f %7.5f %7.5f\n",
+                    0.0,0.0,0.0);
         t0 = t1;
         
         if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
