@@ -512,11 +512,12 @@ int main(int argc, char **argv) {
     usleep(usleepTime);
     t0 = doubleGetTime();
     
-    FusionVector gyroscope, accelerometer;
 
     FusionEuler prevEuler = { .angle = {0.0f, 0.0f, 0.0f} };
     while (1) {
+        FusionVector gyroscope, accelerometer;
         // 센서 데이터 읽기
+        
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
         
