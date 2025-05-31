@@ -527,14 +527,11 @@ int main(int argc, char **argv) {
         accelerometer.axis.y = aRawY / 256.0f;
         accelerometer.axis.z = aRawZ / 256.0f;
 
-        const float gyroThreshold = 3.0f;  // deg/s
+        const float gyroThreshold = 1.5f;  // deg/s
         gyroscope.axis.x = gRawX / 14.375f;     // ITG3200는 14.375 LSB/(°/s)
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        printf("axis: %7.5f %7.5f %7.5f\n",
-             fabsf(gyroscope.axis.x), fabsf(gyroscope.axis.y), fabsf(gyroscope.axis.z));
-            
         bool gyroStable = fabsf(gyroscope.axis.x) < gyroThreshold &&
                         fabsf(gyroscope.axis.y) < gyroThreshold &&
                         fabsf(gyroscope.axis.z) < gyroThreshold;
