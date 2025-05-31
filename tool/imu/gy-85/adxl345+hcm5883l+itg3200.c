@@ -537,6 +537,8 @@ int main(int argc, char **argv) {
     // ======================================================
     // 4) 메인 루프
     // ======================================================
+    FusionVector gyroCalibrated_prev = { 1.0f, 1.0f, 1.0f };;
+
     while (1) {
         FusionVector gyroscope;
         FusionVector accelerometer;
@@ -593,10 +595,24 @@ int main(int argc, char **argv) {
         bool zStable = fabsf(gyroscope.axis.z) < gyroThreshold;
 
         FusionVector gyroCalibrated = gyroscope;
-        if (xStable && yStable && zStable) {
-            // 세 축 모두 안정적이면 전체 오프셋 보정
-            gyroCalibrated = FusionOffsetUpdate(&offset, gyroscope);
+        gyroCalibrated = FusionOffsetUpdate(&offset, gyroscope);
+
+        
+        if (xStable)
+        {
+            gyroCalibrated.axis.x = gyroCalibrated_prev.axis.x;
         }
+        
+        if (yStable)
+        {
+            gyroCalibrated.axis.y = gyroCalibrated_prev.axis.y;
+        }
+
+        if (zStable)
+        {
+            gyroCalibrated.axis.z = gyroCalibrated_prev.axis.z;
+        }
+
         // 한 축 이상 불안정한 경우, 전체 보정 생략 (필요 시 축별 보정 분리 가능)
 
         // ----- (5) AHRS 업데이트 (자기 센서 없이) -----
@@ -611,17 +627,11 @@ int main(int argc, char **argv) {
         FusionEuler computedEuler =
             FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
 
-        // ----- (7) 임계값 판단 후, 삼항 연산자로 각 축 선택 -----
-        FusionEuler outputEuler;
-        outputEuler.angle.roll  = xStable ? prevEuler.angle.roll  : computedEuler.angle.roll;
-        outputEuler.angle.pitch = yStable ? prevEuler.angle.pitch : computedEuler.angle.pitch;
-        outputEuler.angle.yaw   = zStable ? prevEuler.angle.yaw   : computedEuler.angle.yaw;
-
         // ----- (8) 최종 출력 (rad → deg 변환) -----
         printf("rpy %7.5f %7.5f %7.5f\n",
-               outputEuler.angle.pitch * 180.0 / M_PI,  // Pitch (°)
-               outputEuler.angle.roll  * 180.0 / M_PI,  // Roll  (°)
-               outputEuler.angle.yaw   * 180.0 / M_PI); // Yaw   (°)
+               computedEuler.angle.pitch * 180.0 / M_PI,  // Pitch (°)
+               computedEuler.angle.roll  * 180.0 / M_PI,  // Roll  (°)
+               computedEuler.angle.yaw   * 180.0 / M_PI); // Yaw   (°)
 
         // 가속도계 데이터 출력 (g 단위)
         printf("eacc %7.5f %7.5f %7.5f\n",
@@ -634,7 +644,7 @@ int main(int argc, char **argv) {
                0.0, 0.0, 0.0);
 
         // ----- (9) prevEuler 갱신 및 시간 갱신 -----
-        prevEuler = outputEuler;
+        gyroCalibrated_prev = gyroCalibrated;
         t0 = t1;
 
         // ----- (10) 루프 주기 조정 -----
