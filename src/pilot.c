@@ -1515,7 +1515,7 @@ static void pilotSetMotorThrust() {
 	pilotCombineAllMotorThrusts(rpyThrust[0], rpyThrust[1], rpyThrust[2], altitudeThrust);
     } else {
 	// We have a problem.
-    lprintf(0, "sex");
+    lprintf(0, "sexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsexsex");
 
 	motorsThrustSet(0);
     }
