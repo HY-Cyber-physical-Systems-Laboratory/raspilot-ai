@@ -532,8 +532,8 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        // printf("axis: %7.5f %7.5f %7.5f\n",
-        //     gyroscope.axis.x, gyroscope.axis.y, gyroscope.axis.z);
+        printf("axis: %7.5f %7.5f %7.5f\n",
+             fabsf(gyroscope.axis.x), fabsf(gyroscope.axis.y), fabsf(gyroscope.axis.z);
             
         bool gyroStable = fabsf(gyroscope.axis.x) < gyroThreshold &&
                         fabsf(gyroscope.axis.y) < gyroThreshold &&
