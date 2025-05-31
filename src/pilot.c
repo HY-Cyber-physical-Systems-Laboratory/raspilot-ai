@@ -1541,6 +1541,7 @@ void pilotRegularMissionModeLoopTick(void *d) {
     // lprintf(30, "\n");
     
     lprintf(100, "%s: Mission tick\n", PPREFIX());
+    lprintf(100, "%s: Mission tick\n", PPREFIX());
     nextStabilizationTickUsec = pilotScheduleNextTick(uu->autopilot_loop_Hz, pilotRegularMissionModeLoopTick, NULL);
     
     if (uu->flyStage >= FS_FLY) {
@@ -1692,12 +1693,16 @@ int pilotAreAllDevicesReady() {
 		if (debugLevel > 0 && currentTime.msec > lastWaitingMsgMsec + 3000) {
 		    if (lastWaitingMsgMsec != 0) {
 			lprintf(0, "%s: Info: waiting for device: %s.", PPREFIX(), dd->name);
-			mavlinkPrintfStatusTextToListeners("waiting for device: %s.", dd->name);
-			if (uu->pilotLaunchTime + dd->warming_time > currentTime.dtime) {
+			
+            //mavlinkPrintfStatusTextToListeners("waiting for device: %s.", dd->name);
+			
+            if (uu->pilotLaunchTime + dd->warming_time > currentTime.dtime) {
 			    lprintf(0, " Remains: %2d seconds.", (int)(uu->pilotLaunchTime + dd->warming_time - currentTime.dtime));
 			}
+
 			lprintf(0, "\n");
-		    }
+		    
+        }
 		    lastWaitingMsgMsec = currentTime.msec;
 		}
 		return(0);

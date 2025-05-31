@@ -506,7 +506,14 @@ void raspilotBusyWaitUntilTimeoutOrStandby(double sleeptime) {
     
     setCurrentTime();
     tt = currentTime.dtime;
-    while (currentTime.dtime < tt + sleeptime && uu->flyStage != FS_STANDBY) raspilotPoll();
+    while (currentTime.dtime < tt + sleeptime && uu->flyStage != FS_STANDBY){ 
+        lprintf(0, "%s: currentTime = %.6f, targetTime = %.6f\n",
+            PPREFIX(), currentTime.dtime, tt + sleeptime);
+
+        raspilotPoll();
+    
+    
+    }
 }
 
 int raspilotInit(int argc, char **argv) {
@@ -767,10 +774,19 @@ void raspilotWaypointSet(double x, double y, double z, double yaw) {
 	lprintf(0, "%s: Error: waypoint yaw %g out of range -PI .. PI. Normalizing it.\n", PPREFIX(), yaw);
 	yaw = normalizeToRange(yaw, -M_PI, M_PI);
     }
+
+    
     uu->currentWaypoint.position[0] = x;
     uu->currentWaypoint.position[1] = y;
     uu->currentWaypoint.position[2] = z;
     uu->currentWaypoint.yaw = yaw;
+
+    lprintf(0, "%s: Current Waypoint -> x: %.3f, y: %.3f, z: %.3f, yaw: %.3f rad\n",
+        PPREFIX(),
+        uu->currentWaypoint.position[0],
+        uu->currentWaypoint.position[1],
+        uu->currentWaypoint.position[2],
+        uu->currentWaypoint.yaw);
 }
 
 double raspilotCurrentAltitude() {
