@@ -529,14 +529,7 @@ int main(int argc, char **argv) {
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
-        if (fabsf(gyroscope.axis.x) < gyroThreshold &&
-            fabsf(gyroscope.axis.y) < gyroThreshold &&
-            fabsf(gyroscope.axis.z) < gyroThreshold) {
-            
-            t0 = t1;
-            usleep(usleepTime);
-            continue;
-        }
+        
         // 타이밍 계산
         t1 = doubleGetTime();
         samplePeriod = t1 - t0;
@@ -546,14 +539,17 @@ int main(int argc, char **argv) {
         accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
         
         // 오프셋 보정
-        gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
-        // AHRS 업데이트
-        FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
+        if (!(fabsf(gyroscope.axis.x) < gyroThreshold &&
+            fabsf(gyroscope.axis.y) < gyroThreshold &&
+            fabsf(gyroscope.axis.z) < gyroThreshold)) 
+        {
+            gyroscope = FusionOffsetUpdate(&offset, gyroscope);
+            // AHRS 업데이트
+            FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
+        }
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-        
-
 
         printf("rpy %7.5f %7.5f %7.5f\n",
             euler.angle.pitch * M_PI / 180.0,

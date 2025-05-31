@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 	} else {
 	    printf("pin %d out of range 1..27\n", motorPins[n]);
 	}
-    }
+    }   
     
     motorImplementationInitialize(motorPins, motorDirections, n);
 
