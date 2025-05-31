@@ -629,9 +629,9 @@ int main(int argc, char **argv) {
 
         // ----- (8) 최종 출력 (rad → deg 변환) -----
         printf("rpy %7.5f %7.5f %7.5f\n",
-               computedEuler.angle.pitch * 180.0 / M_PI,  // Pitch (°)
-               computedEuler.angle.roll  * 180.0 / M_PI,  // Roll  (°)
-               computedEuler.angle.yaw   * 180.0 / M_PI); // Yaw   (°)
+               computedEuler.angle.pitch * M_PI / 180.0,  // Pitch (°)
+               computedEuler.angle.roll  * M_PI / 180.0,  // Roll  (°)
+               computedEuler.angle.yaw   * M_PI / 180.0); // Yaw   (°)
 
         // 가속도계 데이터 출력 (g 단위)
         printf("eacc %7.5f %7.5f %7.5f\n",
