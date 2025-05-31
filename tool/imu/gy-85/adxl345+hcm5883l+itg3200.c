@@ -526,7 +526,7 @@ int main(int argc, char **argv) {
         accelerometer.axis.y = aRawY / 256.0f;
         accelerometer.axis.z = aRawZ / 256.0f;
 
-        const float gyroThreshold = 0.01f;  // deg/s
+        const float gyroThreshold = 0.001f;  // deg/s
         gyroscope.axis.x = gRawX / 14.375f;     // ITG3200는 14.375 LSB/(°/s)
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
@@ -571,7 +571,7 @@ int main(int argc, char **argv) {
             euler.angle.pitch * M_PI / 180.0,
             euler.angle.roll  * M_PI / 180.0,
             euler.angle.yaw   * M_PI / 180.0);
-            
+
         printf("eacc %7.5f %7.5f %7.5f\n",
             accelerometer.axis.x,
             accelerometer.axis.y,
