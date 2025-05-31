@@ -464,107 +464,185 @@ int main(int argc, char **argv) {
 
     if (optSharedI2cFlag) pi2cInit(optI2cPath, 1);
 
-    // Fusion 초기화
-    const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
-    const FusionVector gyroscopeSensitivity = {0.5f, 0.5f, 0.5f};
-    const FusionVector gyroscopeOffset = {0.0f, 0.0f, 0.0f};
-    const FusionMatrix accelerometerMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
-    const FusionVector accelerometerSensitivity = {1.0f, 1.0f, 1.0f};
-    const FusionVector accelerometerOffset = {0.0f, 0.0f, 0.0f};
-    const FusionMatrix softIronMatrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};;
-    const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
+    
+    // ======================================================
+    // 2) Fusion (AHRS) 초기화
+    // ======================================================
+    const FusionMatrix gyroscopeMisalignment = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+    const FusionVector gyroscopeSensitivity = { 1.0f, 1.0f, 0.8f };
+    const FusionVector gyroscopeOffset      = { 0.0f, 0.0f, 0.0f };
 
+    const FusionMatrix accelerometerMisalignment = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+    const FusionVector accelerometerSensitivity = { 1.0f, 1.0f, 1.0f };
+    const FusionVector accelerometerOffset      = { 0.0f, 0.0f, 0.0f };
+
+    const FusionMatrix softIronMatrix   = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+    const FusionVector hardIronOffset = { 0.0f, 0.0f, 0.0f };
 
     FusionOffset offset;
-    FusionAhrs ahrs;
-    
+    FusionAhrs   ahrs;
+
     FusionOffsetInitialise(&offset, optRate);
     FusionAhrsInitialise(&ahrs);
     FusionAhrsSetSettings(&ahrs, &(FusionAhrsSettings){
-        .convention = FusionConventionNwu,
-        .gain = 0.5f,
+        .convention           = FusionConventionNwu,
+        .gain                 = 0.5f,
         .accelerationRejection = 10.0f,
-        .magneticRejection = 20.0f,
-        .rejectionTimeout = (unsigned)(5 * optRate),
+        .magneticRejection     = 20.0f,
+        .rejectionTimeout      = (unsigned)(5 * optRate),
     });
 
-    // 센서 초기화
+    // ======================================================
+    // 3) 센서 초기화 (ADXL345, ITG3200)
+    // ======================================================
     int accelFd = pi2cOpen(optI2cPath, 0x53);
     int gyroFd  = pi2cOpen(optI2cPath, 0x68);
-    // int compFd  = pi2cOpen(optI2cPath, O_RDWR);
-
+    // int compFd  = pi2cOpen(optI2cPath, O_RDWR); // 자기도 포함하려면 활성화
 
     if (aConfigure(accelFd)) {
-        fprintf(stderr, "Sensor init failed\n");
+        fprintf(stderr, "Sensor init failed (ADXL345)\n");
         return -1;
     }
-
     if (gConfigure(gyroFd)) {
-        fprintf(stderr, "Sensor init failed\n");
+        fprintf(stderr, "Sensor init failed (ITG3200)\n");
         return -1;
     }
 
-
-
+    // SIGINT(Ctrl+C) 시 종료
     signal(SIGINT, taskStop);
 
-    usleepTime = 1000000 / optRate;
+    // 루프 주기 초기화
+    usleepTime = (int)(1000000.0 / optRate);
     usleep(usleepTime);
     t0 = doubleGetTime();
-    
 
-    FusionEuler prevEuler = { .angle = {0.0f, 0.0f, 0.0f} };
+    // 이전 각도(Euler) 초기화 (rad 단위)
+    FusionEuler prevEuler = { .angle = { 0.0f, 0.0f, 0.0f } };
+
+    // 자이로 각속도 임계값 (deg/s)
+    const float gyroThreshold = 3.0f;
+
+    // ======================================================
+    // 4) 메인 루프
+    // ======================================================
     while (1) {
-        FusionVector gyroscope, accelerometer;
-        // 센서 데이터 읽기
-        
+        FusionVector gyroscope;
+        FusionVector accelerometer;
+        FusionVector magnetometer; // 현재 코드에서는 사용 안 하지만 구조만 둠
+
+        // ----- (1) 센서 원시 데이터 읽기 -----
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
-        
+        // 자기 센서 읽는 부분을 넣으려면 아래처럼 사용:
+        // pi2cReadBytes(compFd, 0x03, 6, mm);
+        // mRawX = (int16_t)((mm[0] << 8) | mm[1]);
+        // mRawY = (int16_t)((mm[2] << 8) | mm[3]);
+        // mRawZ = (int16_t)((mm[4] << 8) | mm[5]);
+        // magnetometer.axis.x = mRawX;
+        // magnetometer.axis.y = mRawY;
+        // magnetometer.axis.z = mRawZ;
 
-        // 데이터 변환
-        accelerometer.axis.x = aRawX / 256.0f;  // ADXL345는 ±2g 에서 256 LSB/g
+        // ----- (2) 스케일링 및 보정 (Calibration) -----
+        accelerometer.axis.x = aRawX / 256.0f;  // ±2g → 256 LSB/g
         accelerometer.axis.y = aRawY / 256.0f;
         accelerometer.axis.z = aRawZ / 256.0f;
 
-        const float gyroThreshold = 1.5f;  // deg/s
-        gyroscope.axis.x = gRawX / 14.375f;     // ITG3200는 14.375 LSB/(°/s)
+        // Calibration: Inertial (가속도계 / 자이로)
+        accelerometer = FusionCalibrationInertial(
+                            accelerometer,
+                            accelerometerMisalignment,
+                            accelerometerSensitivity,
+                            accelerometerOffset
+                        );
+
+        gyroscope.axis.x = gRawX / 14.375f;   // 14.375 LSB/(°/s)
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
+        gyroscope = FusionCalibrationInertial(
+                        gyroscope,
+                        gyroscopeMisalignment,
+                        gyroscopeSensitivity,
+                        gyroscopeOffset
+                    );
+
+        // ----- (3) 시간 차이 계산 -----
+        t1 = doubleGetTime();
+        samplePeriod = t1 - t0;
+        if (samplePeriod <= 0.0 || isnan(samplePeriod)) {
+            // 잘못된 주기면 루프 계속
+            t0 = t1;
+            continue;
+        }
+
+        // ----- (4) 자이로 드리프트 오프셋 보정 -----
         bool xStable = fabsf(gyroscope.axis.x) < gyroThreshold;
         bool yStable = fabsf(gyroscope.axis.y) < gyroThreshold;
         bool zStable = fabsf(gyroscope.axis.z) < gyroThreshold;
 
-        // AHRS로부터 계산된 Euler (rad)
-        FusionEuler computedEuler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+        FusionVector gyroCalibrated = gyroscope;
+        if (xStable && yStable && zStable) {
+            // 세 축 모두 안정적이면 전체 오프셋 보정
+            gyroCalibrated = FusionOffsetUpdate(&offset, gyroscope);
+        }
+        // 한 축 이상 불안정한 경우, 전체 보정 생략 (필요 시 축별 보정 분리 가능)
 
-        // 삼항 연산자로 각 축별로 “안정하면 이전 값, 불안정하면 새 값”을 선택
+        // ----- (5) AHRS 업데이트 (자기 센서 없이) -----
+        FusionAhrsUpdateNoMagnetometer(
+            &ahrs,
+            gyroCalibrated,
+            accelerometer,
+            samplePeriod
+        );
+
+        // ----- (6) AHRS로부터 계산된 Euler (rad) -----
+        FusionEuler computedEuler =
+            FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+
+        // ----- (7) 임계값 판단 후, 삼항 연산자로 각 축 선택 -----
         FusionEuler outputEuler;
         outputEuler.angle.roll  = xStable ? prevEuler.angle.roll  : computedEuler.angle.roll;
         outputEuler.angle.pitch = yStable ? prevEuler.angle.pitch : computedEuler.angle.pitch;
         outputEuler.angle.yaw   = zStable ? prevEuler.angle.yaw   : computedEuler.angle.yaw;
 
-        // 화면에 출력할 때는 rad→deg로 변환
+        // ----- (8) 최종 출력 (rad → deg 변환) -----
         printf("rpy %7.5f %7.5f %7.5f\n",
-            outputEuler.angle.pitch * 180.0 / M_PI,
-            outputEuler.angle.roll  * 180.0 / M_PI,
-            outputEuler.angle.yaw   * 180.0 / M_PI);
+               outputEuler.angle.pitch * 180.0 / M_PI,  // Pitch (°)
+               outputEuler.angle.roll  * 180.0 / M_PI,  // Roll  (°)
+               outputEuler.angle.yaw   * 180.0 / M_PI); // Yaw   (°)
 
+        // 가속도계 데이터 출력 (g 단위)
         printf("eacc %7.5f %7.5f %7.5f\n",
-            accelerometer.axis.x,
-            accelerometer.axis.y,
-            accelerometer.axis.z);
+               accelerometer.axis.x,
+               accelerometer.axis.y,
+               accelerometer.axis.z);
 
+        // pose는 원래 0,0,0으로 출력
         printf("pose %7.5f %7.5f %7.5f\n",
-                    0.0,0.0,0.0);
-        t0 = t1;
-        // 다음 반복을 위해 prevEuler 갱신
+               0.0, 0.0, 0.0);
+
+        // ----- (9) prevEuler 갱신 및 시간 갱신 -----
         prevEuler = outputEuler;
-        
-        if (samplePeriod > 1.0 / optRate && usleepTime > 0) usleepTime--;
-        else if (samplePeriod < 1.0 / optRate) usleepTime++;
-        //fflush(stdout);
+        t0 = t1;
+
+        // ----- (10) 루프 주기 조정 -----
+        if (samplePeriod > 1.0 / optRate && usleepTime > 0) {
+            usleepTime--;
+        } else if (samplePeriod < 1.0 / optRate) {
+            usleepTime++;
+        }
         usleep(usleepTime);
     }
 
