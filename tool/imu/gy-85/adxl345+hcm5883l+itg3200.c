@@ -511,9 +511,9 @@ int main(int argc, char **argv) {
     usleepTime = 1000000 / optRate;
     usleep(usleepTime);
     t0 = doubleGetTime();
+    
+    FusionVector gyroscope, accelerometer;
     while (1) {
-        FusionVector gyroscope, accelerometer;
-
         // 센서 데이터 읽기
         ADXL345_ReadData(accelFd, &aRawX, &aRawY, &aRawZ);
         ITG3200_ReadData(gyroFd, &gRawX, &gRawY, &gRawZ);
@@ -524,10 +524,19 @@ int main(int argc, char **argv) {
         accelerometer.axis.y = aRawY / 256.0f;
         accelerometer.axis.z = aRawZ / 256.0f;
 
+        const float gyroThreshold = 0.01f;  // deg/s
         gyroscope.axis.x = gRawX / 14.375f;     // ITG3200는 14.375 LSB/(°/s)
         gyroscope.axis.y = gRawY / 14.375f;
         gyroscope.axis.z = gRawZ / 14.375f;
 
+        if (fabsf(gyroscope.axis.x) < gyroThreshold &&
+            fabsf(gyroscope.axis.y) < gyroThreshold &&
+            fabsf(gyroscope.axis.z) < gyroThreshold) {
+            
+            t0 = t1;
+            usleep(usleepTime);
+            continue;
+        }
         // 타이밍 계산
         t1 = doubleGetTime();
         samplePeriod = t1 - t0;
