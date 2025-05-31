@@ -6,17 +6,17 @@
 #include "common.h"
 
 void missionLoiter(double loiterTime, double altitude) {
-    lprintf(1, "%s: target mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
+    lprintf(0, "%s: target mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
     
     raspilotLaunch(uu->config.drone_min_altitude + 0.02);
 
-    lprintf(1, "%s: mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
+    lprintf(0, "%s: mission: Begin loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
     
     // loiter 10 seconds
     raspilotWaypointSet(0, 0, altitude, 0);
     raspilotBusyWaitUntilTimeoutOrStandby(loiterTime);
 
-    lprintf(1, "%s: mission: End   loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
+    lprintf(0, "%s: mission: End   loiter(%g, %g)!\n", PPREFIX(), loiterTime, altitude);
 
     // Hmm. if we are too low, it may hit the ground and fail roll,pitch goals
     // raspilotGotoWaypoint(0, 0, 0.10, 0);
